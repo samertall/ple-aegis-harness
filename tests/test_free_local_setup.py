@@ -32,3 +32,11 @@ def test_free_scripts_are_valid_bash():
         path=ROOT/'scripts'/name
         check=subprocess.run(["bash","-n",str(path)],capture_output=True,text=True)
         assert check.returncode==0, check.stderr
+
+
+def test_runner_has_gated_data_consent_guard_and_safe_metadata_mode():
+    script=(ROOT/'scripts/run_free_dev.sh').read_text()
+    assert 'PLE_GATED_DATA_PROCESSING_APPROVED' in script
+    assert script.count('PLE_GATED_DATA_PROCESSING_APPROVED') >= 2
+    assert 'check_gemini_metadata.py' in script
+    assert 'metadata' in script

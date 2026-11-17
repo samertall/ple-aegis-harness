@@ -13,6 +13,11 @@ if [[ "$AEGIS_FREE_ONLY" != "YES" ]]; then
   echo "Free-only confirmation missing. Refusing model calls." >&2
   exit 2
 fi
+# Free/metadata-only authentication check. Never sends prompts, PLE data, or model calls.
+if [[ "${1:-}" == "metadata" ]]; then
+  python3 "$HARNESS_DIR/scripts/check_gemini_metadata.py"
+  exit $?
+fi
 [[ -n "$GEMINI_API_KEY" && -n "$HF_TOKEN" && -n "$MODEL_PROXY_KEY" ]] ||
   { echo "Incomplete private config. Re-run interactive setup." >&2; exit 2; }
 command -v docker >/dev/null || { echo "Docker required" >&2; exit 2; }
@@ -55,10 +60,20 @@ PY
       echo "Usage: bash scripts/run_free_dev.sh task TASK_ID" >&2
       exit 2
     fi
+    if [[ "${PLE_GATED_DATA_PROCESSING_APPROVED:-}" != "YES" ]]; then
+      echo "BLOCKED: confirm with PLE organizers that sending restricted task material to Google AI Studio Unpaid Services is allowed." >&2
+      echo "Until confirmed, do not run task or all. Metadata and public smoke can still be tested." >&2
+      exit 2
+    fi
     uv run python eval/run.py "$HARNESS_DIR" --trials 1 --tasks "$2"
     ;;
   all)
     echo "29 genuine PLE tasks; Free Tier quotas may interrupt. No paid API key permitted."
+    if [[ "${PLE_GATED_DATA_PROCESSING_APPROVED:-}" != "YES" ]]; then
+      echo "BLOCKED: confirm with PLE organizers that sending restricted task material to Google AI Studio Unpaid Services is allowed." >&2
+      echo "Until confirmed, do not run task or all. Metadata and public smoke can still be tested." >&2
+      exit 2
+    fi
     uv run python eval/run.py "$HARNESS_DIR" --trials 1
     uv run python -m kit artifacts "$HARNESS_DIR"
     ;;
@@ -66,7 +81,7 @@ PY
     uv run python -m kit artifacts "$HARNESS_DIR"
     ;;
   *)
-    echo "Usage: bash scripts/run_free_dev.sh smoke | task TASK_ID | all | artifacts" >&2
+    echo "Usage: bash scripts/run_free_dev.sh metadata | smoke | task TASK_ID | all | artifacts" >&2
     exit 2
     ;;
 esac

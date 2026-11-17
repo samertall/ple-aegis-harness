@@ -8,6 +8,20 @@ Google source: https://aistudio.google.com/docs/pricing#gemini-3.8-flash (Free T
 
 Only use an API key from a project that shows **Free Tier**, with **no billing account linked**, at https://aistudio.google.com/projects. Do not choose Set up billing, upgrade, purchase credits, or use a Google Cloud Vertex AI key. Free Tier requests are rate-limited and may return 429; stop or resume after free quota resets rather than paying. Google says data sent through its Free Tier may be used to improve its products; check your Hugging Face gated-data commitments and eligibility before uploading any task contents. An API key's Free Tier status cannot be established from its prefix; confirm it visually in AI Studio first.
 
+## PLE gated-data usage gate (important)
+
+Google AI Studio Free Tier's **Unpaid Services** terms allow Google to use submitted content to improve products. The Hugging Face PLE dataset access agreement restricts using dataset material for model training or distillation. These terms may conflict. **Do not use the free-tier Gemini endpoint on any gated PLE task files or instructions unless the benchmark organizers explicitly confirm it is permitted.**
+
+The runner blocks `task` and `all` when `PLE_GATED_DATA_PROCESSING_APPROVED` is not `YES`. This is a user-side gate, **not** a substitute for organizer permission; set it only after obtaining the required written confirmation. The safe `metadata` and `smoke` tests use no gated task content.
+
+You can ask the organizers at **ple-bench@google.com** whether Gemini API Unpaid Services may be used to process the PLE dev dataset, and whether its data-improvement policy conflicts with access restrictions. Do not send the data itself in that inquiry.
+
+For now, safely verify key/model access with:
+
+    bash scripts/run_free_dev.sh metadata
+
+This makes only a `GET` request for `models/gemini-3.8-flash` metadata. It does **not** prove Free Tier or authorize a benchmark. An exposed key should be rotated after use, because any third party with it may invoke your project's API quota.
+
 ## Hardware
 
 Use a computer you already own, not a paid virtual machine. The official PLE kit calls for at least 6 CPU cores and 16.25 GiB of Docker-available RAM, plus around 10 GiB for base images, around 17 GiB for world images, and additional task-data storage. A standard free hosted GitHub Actions runner is usually too small for the complete benchmark. On Windows use Docker Desktop with WSL2 integration and clone both repositories into the Linux filesystem under the home directory.
