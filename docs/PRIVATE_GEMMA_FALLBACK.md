@@ -35,6 +35,15 @@ The script checks CPU count, Linux-visible RAM, home disk free space, largest NV
 
 PLE dev tasks need about six CPUs, 16.25 GiB of Docker RAM per task, 10 GiB base images and roughly 17 GiB world images, plus task-data space. A quantized Gemma 4 26B A4B model is roughly 16 to 19 GiB of weights before KV cache and overhead, depending on format. The readiness tool uses advisory thresholds (60 GiB free disk, and 24 GiB GPU VRAM or 48 GiB host RAM alongside Docker). These are NOT certified requirements or proof of acceptable inference speed. CPU-only inference could be too slow for PLE task limits.
 
+## Interpreting Windows hardware results
+
+A physical Windows host with more than 16.25 GiB of RAM does **not** prove that WSL2/Docker Desktop has 16.25 GiB allocated. The JSON now reports `host_ram_at_least_16_25_gib` separately from `docker_memory_16_25_gib_verified` (false until verified by a running Docker environment).
+
+`disk_shortfall_to_60_gib` is the difference from this project's conservative **advisory** 60 GiB free-space target, **not** an official fixed PLE minimum. The official documentation requires room for roughly 10 GB base images, ~17 GB world images and additional task data; the system needs more than 14.51 GiB available before a full run is realistic.
+
+If the machine has under ~24 GiB host RAM, a 6 GiB NVIDIA GPU and no Docker, do **not** download or start the 26B local model. The ~18 GB model weights alone exceed that GPU's VRAM, and sharing host RAM with PLE's Docker requirements risks out-of-memory failures. Free disk cleanup can solve only the storage bottleneck, not the model-memory issue. Keep Gemini as the competition model and pursue verified free provider capacity/organizer-approved evaluation rather than secretly substituting a smaller model.
+
+Never delete personal files automatically. If freeing disk, use Windows Settings → System → Storage and review Temporary files, Recycling Bin, and large unused applications; verify each item before removing it.
 ## Next steps if hardware meets requirements
 
 Choose a genuine local inference runtime supporting OpenAI-compatible chat completions and tool calls, for example a properly configured Ollama or vLLM installation. Review model licensing and source, and use private local weights only; avoid cloud-hosted inference and paid GPU rentals. Model downloads are substantial and should not be attempted until capacity is confirmed.
