@@ -25,6 +25,8 @@ jobs:
                   if (not item.isfile() or p.is_absolute()
                       or ".." in p.parts or item.issym() or item.islnk()):
                       raise ValueError(f"Disallowed archive member: {item.name}")
+                  if p.as_posix() == '.github/workflows/ci.yml':
+                      continue
                   p.parent.mkdir(parents=True, exist_ok=True)
                   with archive.extractfile(item) as src:
                       p.write_bytes(src.read())
