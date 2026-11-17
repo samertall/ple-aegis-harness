@@ -24,6 +24,14 @@ MAX_RESULT = 17000
 CONTEXT_PAT = re.compile(r'(context|prompt).{0,80}(length|window|long|tokens)|maximum prompt length', re.I)
 RETRY = (3, 8, 16, 30, 60)
 
+def reserve_for(session):
+    """Short smoke tasks must not use the six-hour task's fixed wrap reserve."""
+    limits = getattr(session, 'limits', {}) or {}
+    total = limits.get('agent_timeout_sec')
+    if isinstance(total, (int, float)) and total > 0:
+        return min(VERIFY_RESERVE, max(5.0, float(total) * 0.12))
+    return VERIFY_RESERVE
+
 SYSTEM = '''You are Aegis PLE, a senior multidisciplinary physical engineering analyst.
 You work on one genuine project in an offline Linux task container; your tools run
 in that task container, not inside your model host. Your responsibility is to
@@ -146,7 +154,7 @@ async def model_call(client, session, messages, use_tools, model):
             # Keep model compatibility broad: no reasoning_effort parameter
             # (unsupported by some sponsored models).
             reply = await asyncio.wait_for(client.chat.completions.create(**req),
-                         timeout=min(1600, max(4, left-(3 if not use_tools else VERIFY_RESERVE))) if left is not None else 1600)
+                         timeout=min(1600, max(4, left-(3 if not use_tools else reserve_for(session)))) if left is not None else 1600)
             if reply.usage:
                 details = getattr(reply.usage,'prompt_tokens_details',None)
                 await session.usage(model,reply.usage.prompt_tokens or 0,
@@ -189,7 +197,7 @@ async def solve(session, client=None):
             messages.append({'role':'user','content':'Initial task-container inventory (not exhaustive):\n'+clip(inventory.get('output',''),9000)})
         for turn in range(MAX_TURNS):
             left = session.time_left()
-            wrap = left is not None and left < max(35, VERIFY_RESERVE)
+            wrap = left is not None and left < reserve_for(session)
             if session.cancelled.is_set(): break
             if wrap:
                 messages.append({'role':'user','content':'Deadline is near. Finalize deliverables now. Report paths and uncertain items concisely; no additional operations.'})
