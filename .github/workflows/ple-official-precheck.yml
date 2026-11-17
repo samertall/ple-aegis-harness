@@ -10,7 +10,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 35
     steps:
       - name: Check out harness
         uses: actions/checkout@v4
@@ -22,6 +22,11 @@ jobs:
         run: |
           cd "$RUNNER_TEMP/ple"
           uv run python -m kit validate "$GITHUB_WORKSPACE"
+      - name: Build competition serve image with official Docker kit
+        timeout-minutes: 25
+        run: |
+          cd "$RUNNER_TEMP/ple"
+          uv run python -m kit build "$GITHUB_WORKSPACE" --rebuild
       - name: Detect actual official dev artifacts
         id: data
         shell: bash
