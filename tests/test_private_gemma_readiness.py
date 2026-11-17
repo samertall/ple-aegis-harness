@@ -39,3 +39,30 @@ def test_does_not_use_credentials_or_download_models():
     assert "requests." not in code
     assert "ollama pull" not in code
     assert "model_run_verified" in code
+
+
+def test_windows_dispatch_uses_host_memory_not_linux_proc(monkeypatch):
+    import check_private_gemma_readiness as scanner
+    monkeypatch.setattr(scanner.sys, "platform", "win32")
+    monkeypatch.setattr(scanner, "read_windows_ram_gib", lambda: 63.75)
+    assert scanner.read_ram_gib() == 63.75
+
+
+def test_linux_proc_meminfo_is_still_supported(monkeypatch):
+    import check_private_gemma_readiness as scanner
+    monkeypatch.setattr(scanner.sys, "platform", "linux")
+    original = Path.read_text
+    def fake_read_text(self, *args, **kwargs):
+        if str(self) == "/proc/meminfo":
+            return "MemTotal:       33554432 kB\nMemFree: 1000 kB\n"
+        return original(self, *args, **kwargs)
+    monkeypatch.setattr(Path, "read_text", fake_read_text)
+    assert scanner.read_ram_gib() == 32.0
+
+
+def test_windows_ram_failure_reports_unknown_not_false_adequacy(monkeypatch):
+    import check_private_gemma_readiness as scanner
+    monkeypatch.setattr(scanner.sys, "platform", "win32")
+    monkeypatch.setattr(scanner, "read_windows_ram_gib", lambda: 0.0)
+    assert scanner.read_ram_gib() == 0.0
+    assert not scanner.grade_local_host(8, scanner.read_ram_gib(), 100, 24)["plausible_local_gemma"]
