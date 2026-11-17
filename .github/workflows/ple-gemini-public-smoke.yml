@@ -1,0 +1,131 @@
+name: Genuine Gemini public smoke (manual FREE TIER only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_free_tier:
+        description: Confirm the selected Gemini key belongs to an unbilled Google AI Studio FREE TIER project
+        required: true
+        type: choice
+        options:
+          - "NO"
+          - "YES_CONFIRMED_UNBILLED"
+        default: "NO"
+      confirm_public_input:
+        description: Confirm ONLY public PLE kit smoke/MCP fixtures are used; no gated dataset tasks or files
+        required: true
+        type: choice
+        options:
+          - "NO"
+          - "YES_PUBLIC_FIXTURES_ONLY"
+        default: "NO"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aegis-public-gemini-smoke
+  cancel-in-progress: false
+
+jobs:
+  public-smoke:
+    if: ${{ inputs.confirm_free_tier == 'YES_CONFIRMED_UNBILLED' && inputs.confirm_public_input == 'YES_PUBLIC_FIXTURES_ONLY' }
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    env:
+      AEGIS_FREE_ONLY: "YES"
+      GEMINI_API_KEY: ${{ secrets.PLE_GEMINI_API_KEY }
+      MODEL_PROXY_KEY: sk-aegis-ephemeral-ci-local-proxy-not-user-key
+      MODEL_PROXY_URL: http://127.0.0.1:4000
+      JUDGE_MODEL: gemini-3.8-flash
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Refuse missing credentials or billing approval
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ -n "$GEMINI_API_KEY" ]] || { echo "::error::PLE_GEMINI_API_KEY is missing"; exit 2; }
+          [[ "$AEGIS_FREE_ONLY" == "YES" ]] || exit 2
+          # Secret access alone cannot prove that the project's plan is free.
+          echo "User explicitly confirmed an UNBILLED Free Tier project."
+          echo "No Hugging Face token or gated benchmark task will be used in this workflow."
+
+      - name: Clone official PLE kit
+        shell: bash
+        run: git clone --depth 1 https://github.com/google-research/ple.git "$RUNNER_TEMP/ple"
+
+      - name: Start real Gemini proxy with genuine API key
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash scripts/start_free_gemini_proxy.sh > "$RUNNER_TEMP/aegis-proxy.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/aegis-proxy.pid"
+          for i in $(seq 1 90); do
+            if curl --max-time 2 -fsS -H "Authorization: Bearer $MODEL_PROXY_KEY" \
+              http://127.0.0.1:4000/v1/models >/dev/null 2>&1; then
+              break
+            fi
+            kill -0 "$(cat "$RUNNER_TEMP/aegis-proxy.pid")" 2>/dev/null ||
+              { echo "::error::Proxy exited without becoming ready"; exit 2; }
+            sleep 2
+          done
+          curl --max-time 2 -fsS -H "Authorization: Bearer $MODEL_PROXY_KEY" \
+            http://127.0.0.1:4000/v1/models >/dev/null
+          echo "Proxy started, publicly documented model alias configured."
+
+      - name: Official PLE kit check — PUBLIC fixtures only (gated artifacts missing is expected)
+        timeout-minutes: 22
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd "$RUNNER_TEMP/ple"
+          set +e
+          uv run python -m kit check "$GITHUB_WORKSPACE" \
+            --work "$RUNNER_TEMP/ple-public-check" > "$RUNNER_TEMP/ple-public.log" 2>&1
+          set -e
+          python - <<'PY'
+          import json, os, pathlib, sys
+          base=pathlib.Path(os.environ["RUNNER_TEMP"])
+          report_path=base/"ple-public-check"/"check.json"
+          if not report_path.exists():
+              print("::error::Official kit check report unavailable")
+              sys.exit(1)
+          report=json.loads(report_path.read_text())
+          stages={s["name"]:s["status"] for s in report.get("stages", [])}
+          public=("submission.yaml","files","build","model","listen","smoke","mcp")
+          failed=[name for name in public if stages.get(name)!="pass"]
+          for name in (*public, "artifacts"):
+              print(f"{name}: {stages.get(name, 'NOT_RUN')}")
+          if failed:
+              print("::error::Genuine model public smoke/MCP stages did not all pass: "+str(failed))
+              sys.exit(1)
+          print("PASS: Genuine Gemini Free Tier model and PLE PUBLIC smoke/MCP checks.")
+          print("NOT benchmark qualified: 29 real dev tasks and artifacts NOT executed.")
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as out:
+              out.write("### Genuine Gemini API PUBLIC smoke only\n")
+              out.write("User confirmed unbilled Free Tier; used public kit fixtures only.\n")
+              out.write("**No gated data, no 29-task evaluation, no real artifacts.**\n")
+          PY
+
+      - name: Retain checker report, not environment or token
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-public-smoke-report
+          path: |
+            ${{ runner.temp }/ple-public-check/check.json
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Stop local proxy
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$RUNNER_TEMP/aegis-proxy.pid" ]]; then
+            kill "$(cat "$RUNNER_TEMP/aegis-proxy.pid")" 2>/dev/null || true
+          fi
