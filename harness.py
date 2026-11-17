@@ -47,7 +47,8 @@ WORKING PROCEDURE (must be adapted to the task, no fixed answers):
 6) Create deliverables at the EXACT requested paths; do not hide content in
    commentary. Reopen generated output, test format and numerical values, and
    resolve discrepancies. Label unverified assumptions; do not fabricate results.
-7) For MCP app tasks, list server tools before calling them; use task MCP, not
+7) For MCP app tasks, use mcp_search to find relevant server tools, inspect exact
+   schemas with mcp_list if needed, and call them; use task MCP, not
    shell requests to external hosts. Respect file, network and resource limits.
 8) Finish with a concise file/path checklist and key computed findings,
    distinguishing verified from uncertain outputs.
@@ -74,7 +75,9 @@ TOOLS = [
         'parameters':{'type':'object','properties':{'path':{'type':'string'}},'required':['path']}}},
     {'type':'function', 'function':{'name':'write_file','description':'Write complete text output to task container, creating parents if required. Prefer bash for large generated files.',
         'parameters':{'type':'object','properties':{'path':{'type':'string'},'content':{'type':'string'}},'required':['path','content']}}},
-    {'type':'function', 'function':{'name':'mcp_list','description':'Discover available tools in the named task MCP server. Only available if task advertises MCP servers.',
+    {'type':'function', 'function':{'name':'mcp_search','description':'Search a large task MCP catalog by name/description, returning matching tool schemas without truncating the whole catalog.',
+        'parameters':{'type':'object','properties':{'server':{'type':'string'},'query':{'type':'string'}},'required':['server','query']}}},
+    {'type':'function', 'function':{'name':'mcp_list','description':'Discover available tools in the named task MCP server. Prefer mcp_search when there are many tools.',
         'parameters':{'type':'object','properties':{'server':{'type':'string'}},'required':['server']}}},
     {'type':'function', 'function':{'name':'mcp_call','description':'Call a discovered task MCP tool with schema-valid arguments.',
         'parameters':{'type':'object','properties':{'server':{'type':'string'},'tool':{'type':'string'},'arguments':{'type':'object'}},'required':['server','tool','arguments']}}},
@@ -118,6 +121,8 @@ async def run_tool(session, mcp, call):
         if name == 'write_file':
             content = args['content'].encode('utf-8')
             return f'wrote {await session.write_file(args["path"], content)} bytes to {args["path"]}'
+        if name == 'mcp_search':
+            return clip(json.dumps(await mcp.search_tools(args['server'], args['query']), ensure_ascii=False), 45000)
         if name == 'mcp_list':
             return clip(json.dumps(await mcp.list_tools(args['server']),ensure_ascii=False), 45000)
         if name == 'mcp_call':

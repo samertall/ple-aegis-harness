@@ -10,6 +10,7 @@ class MCPBridge:
         self.session = session
         self.state: dict[str, dict[str, str]] = {}
         self.reqids = itertools.count(1)
+        self.tool_catalog: dict[str, list[dict[str, Any]]] = {}
 
     async def rpc(self, name: str, method: str, params: dict[str, Any] | None = None):
         server = self.session.mcp_servers.get(name)
@@ -64,6 +65,8 @@ class MCPBridge:
         self.state[name]['initialized'] = '1'
 
     async def list_tools(self, name: str):
+        if name in self.tool_catalog:
+            return self.tool_catalog[name]
         await self.initialize(name)
         # MCP pagination; limit context instead of silently hiding tool definitions.
         result, tools, cursor = {}, [], None
@@ -72,7 +75,30 @@ class MCPBridge:
             tools += result.get('tools', [])
             cursor = result.get('nextCursor')
             if not cursor: break
+        self.tool_catalog[name] = tools
         return tools
+
+    async def search_tools(self, name: str, query: str, limit: int = 12):
+        """Search task MCP catalog by relevance without truncating schemas."""
+        if not isinstance(query, str) or not query.strip():
+            raise ValueError('A nonempty search query is required')
+        tokens = query.casefold().split()
+        tools = await self.list_tools(name)
+        ranked = []
+        for item in tools:
+            title = str(item.get('name', '')).casefold()
+            description = str(item.get('description', '')).casefold()
+            title_hits = sum(t in title for t in tokens)
+            all_hits = sum(t in (title + ' ' + description) for t in tokens)
+            if all_hits:
+                ranked.append((title_hits * 3 + all_hits, item))
+        ranked.sort(key=lambda row: row[0], reverse=True)
+        return {
+            'server': name,
+            'catalog_size': len(tools),
+            'query': query,
+            'matches': [item for _, item in ranked[:max(1, min(int(limit), 20))]],
+        }
 
     async def call_tool(self, name: str, tool: str, arguments: dict[str, Any]):
         await self.initialize(name)

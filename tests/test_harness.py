@@ -110,3 +110,28 @@ async def test_mcp_tool_listing_requires_allowed_server():
     mcp = MCPBridge(FakeMCPHost())
     with pytest.raises(ValueError, match='Unknown MCP server'):
         await mcp.list_tools('some-other-server')
+
+
+@pytest.mark.asyncio
+async def test_mcp_search_discovers_tool_schemas_from_large_catalog():
+    class LargeMCPHost(FakeMCPHost):
+        async def http(self,url,body,headers,method='POST'):
+            import base64
+            request=json.loads(body)
+            if request['method'] != 'tools/list':
+                return await super().http(url,body,headers,method)
+            self.requests.append((request,headers))
+            tools=[{'name':f'auxiliary_{i}', 'description':'Other unrelated features',
+                    'inputSchema':{'type':'object'}} for i in range(100)]
+            tools.append({'name':'read_spreadsheet', 'description':'Read workbook cells and formulas',
+                          'inputSchema':{'type':'object','properties':{'workbook_id':{'type':'string'}}}})
+            value={'jsonrpc':'2.0', 'id':request['id'], 'result':{'tools':tools}}
+            return {'status':200,'headers':{},'body_b64':base64.b64encode(json.dumps(value).encode()).decode()}
+    host = LargeMCPHost()
+    mcp = MCPBridge(host)
+    results = await mcp.search_tools('app', 'spreadsheet workbook')
+    assert results['catalog_size'] == 101
+    assert results['matches'][0]['name'] == 'read_spreadsheet'
+    assert 'workbook_id' in results['matches'][0]['inputSchema']['properties']
+    await mcp.search_tools('app', 'spreadsheet')
+    assert len([req for req, _ in host.requests if req['method'] == 'tools/list']) == 1

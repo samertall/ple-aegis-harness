@@ -1,0 +1,42 @@
+name: Official PLE configuration validation
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out harness
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Clone the official PLE kit
+        run: git clone --depth 1 https://github.com/google-research/ple.git "$RUNNER_TEMP/ple"
+      - name: Run official kit configuration validation
+        run: |
+          cd "$RUNNER_TEMP/ple"
+          uv run python -m kit validate "$GITHUB_WORKSPACE"
+      - name: Detect actual official dev artifacts
+        id: data
+        shell: bash
+        run: |
+          if [[ -f artifacts/manifest.json ]]; then
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo '::warning::Official PLE dev artifacts are absent. This run is not competition qualification.'
+          fi
+      - name: Review complete exported artifacts
+        if: steps.data.outputs.available == 'true'
+        run: |
+          cd "$RUNNER_TEMP/ple"
+          uv run python -m kit artifacts "$GITHUB_WORKSPACE"
+      - name: Explain unresolved qualification
+        if: steps.data.outputs.available != 'true'
+        run: echo 'Config validation only; benchmark and official Docker tests still required.'
