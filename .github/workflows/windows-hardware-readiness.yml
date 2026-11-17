@@ -1,0 +1,32 @@
+name: Windows Gemma hardware checker (offline)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/check_private_gemma_readiness.py'
+      - 'tests/test_private_gemma_readiness.py'
+      - '.github/workflows/windows-hardware-readiness.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  powershell-check:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run hardware checker from native Windows PowerShell
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $result = python .\scripts\check_private_gemma_readiness.py
+          if ($LASTEXITCODE -ne 0) { throw 'Hardware checker exited with failure' }
+          $text = $result -join [Environment]::NewLine
+          Write-Output $text
+          if ($text -notmatch '"platform": "win32"') { throw 'Not running Windows native code' }
+          if ($text -notmatch '"ram_gib": [1-9]') { throw 'Windows host RAM was not detected' }
+          if ($text -notmatch '"windows_note"') { throw 'Missing WSL/Docker allocation warning' }
+          Write-Output 'PASS: Windows PowerShell/native Python hardware check; no API calls or model inference.'
