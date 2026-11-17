@@ -1,7 +1,7 @@
 # Aegis PLE: Evidence-First Engineering Agents With a Verification Gate
 
-**GitHub repository:** `[ADD PUBLIC REPO URL]`  
-**Exact submission commit SHA (40 characters):** `[INSERT AFTER PUSH]`  
+**GitHub repository:** https://github.com/samertall/ple-aegis-harness  
+**Exact submission commit SHA (40 characters):** `[INSERT FINAL 40-CHAR SHA AFTER COMMITTING ACTUAL 29-TASK ARTIFACTS]`  
 **Target sponsored model:** `google-cloud/claude-opus-5-5`  
 **Status:** **DRAFT — DO NOT SUBMIT WITHOUT OFFICIAL DEV EVALUATION**
 
