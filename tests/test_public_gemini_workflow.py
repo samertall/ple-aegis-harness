@@ -31,3 +31,13 @@ def test_keys_only_from_secret_and_no_output():
     assert "generateContent" not in yml
     assert "upload-artifact" in yml
     assert "ple-public-check/check.json" in yml
+
+
+def test_workflow_expressions_are_balanced_and_strictly_manual():
+    yml = FLOW.read_text()
+    assert yml.count("$"+"{{") == yml.count("}}") == 3
+    assert "GEMINI_API_KEY: $"+"{{ secrets.PLE_GEMINI_API_KEY }}" in yml
+    assert "confirm_public_input == 'YES_PUBLIC_FIXTURES_ONLY' }}" in yml
+    assert "runner.temp }}" in yml
+    # Invalid Actions syntax can register a ghost push workflow with 0 jobs.
+    assert "workflow_dispatch:" in yml and "\n  push:" not in yml
