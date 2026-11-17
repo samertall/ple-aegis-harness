@@ -3,7 +3,7 @@
 - [x] Original open-source harness code and MIT license prepared
 - [x] `submission.yaml` selects a permitted `google-cloud/gemini-3.8-flash` sponsored model for the free-tier strategy
 - [x] WebSocket protocol, task tools, MCP support implemented
-- [x] Local unit/protocol smoke tests run (28 passing on 2026-11-17)
+- [x] Local unit/protocol smoke tests run (52 passing on 2026-11-17)
 - [x] Cover and architecture figures created
 - [x] Local static preflight and guarded official check script prepared
 - [x] GitHub Actions mocked tests and official PLE configuration validation passed
@@ -12,7 +12,11 @@
 - [x] OFFLINE deterministic fake model checks and free Docker protocol preflight added (NOT real benchmark)
 - [ ] Official `uv run python -m kit check ../ple-aegis-harness` passes
 - [x] Gated development dataset read access approved and authenticated via GitHub Actions
-- [ ] Real model/judge endpoint and Docker-capable evaluation runner available without paid charges
+- [x] Gemini Free Tier key authenticates to model metadata without inference
+- [x] Official Docker package and files accepted in both genuine public smoke attempts
+- [ ] Genuine model inference stable (Gemini returned HTTP 503, then timeout on public fixture)
+- [ ] Organizer approves gated PLE data processing on unpaid Gemini API, or another privacy-compatible no-cost model is used
+- [ ] Docker-capable local evaluation runner available without paid charges
 - [ ] Genuine full dev run produces `artifacts/` using `uv run python eval/run.py`
 - [ ] `uv run python -m kit artifacts ../ple-aegis-harness` passes
 - [ ] Two-model experimental comparison + genuine controlled ablations done

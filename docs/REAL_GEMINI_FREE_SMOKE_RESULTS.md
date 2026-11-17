@@ -38,3 +38,10 @@ These results do not prove the model/harness can complete the live smoke and MCP
 3. Use the existing secure local runner on sufficiently provisioned WSL2/Docker, or another explicitly authorized no-cost option, to produce genuine dev artifacts; run kit artifacts and update the Kaggle writeup using measured evidence.
 
 Sources: https://ai.google.dev/gemini-api/docs/api-errors and https://github.com/google-research/ple/blob/main/eval/README.md
+## Verified remediation (no extra paid inference)
+
+- Local LiteLLM no longer automatically retries provider failures (`router_settings.num_retries: 0`), preserving limited free daily quota.
+- The manually triggered public smoke workflow now generates an unpredictable proxy master key per run.
+- `scripts/diagnose_ple_check.py` produces a redacted offline classification of official `check.json` files, identifying `UPSTREAM_503` and `MODEL_TIMEOUT` without printing raw model error details or secrets.
+- The test suite now checks the diagnostic categories, secret suppression, local proxy identity, zero retry policy and manual-only smoke execution.
+- An upstream Gemini 503 caused by high demand is not repairable from the Aegis source repository; no more live Free Tier retries were initiated while applying these changes.

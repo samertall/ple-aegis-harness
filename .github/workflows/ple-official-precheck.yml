@@ -2,6 +2,15 @@ name: Official PLE configuration validation
 on:
   push:
     branches: [main]
+    paths:
+      - 'submission.yaml'
+      - 'serve.py'
+      - 'harness.py'
+      - 'protocol.py'
+      - 'mcp_bridge.py'
+      - 'requirements.txt'
+      - 'artifacts/**'
+      - '.github/workflows/ple-official-precheck.yml'
   workflow_dispatch:
 
 permissions:

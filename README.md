@@ -2,7 +2,7 @@
 
 **Google – Agent Harness on Physical-Engineering's Last Exam (Kaggle, 2026)**
 
-> **Qualification status (17 November 2026):** This public repository passes 28 automated protocol/integration/fixture/safety tests and the official PLE `kit validate` and `kit build` steps on GitHub Actions. **Full model-backed `kit check`, the 29-task development evaluation, and real `artifacts/` remain outstanding.** Kaggle account submission status cannot be independently verified here. No PLE dev score is claimed. See the strict [free-only evaluation plan](docs/FREE_ONLY_QUALIFICATION.md) and [full qualification requirements](docs/QUALIFICATION_ACCESS_AND_RUN.md).
+> **Qualification status (17 November 2026):** This public repository passes 52 automated protocol/integration/fixture/safety tests and the official PLE `kit validate` and `kit build` steps on GitHub Actions. **Real Gemini Free Tier model connectivity failed upstream (503, then timeout); full model-backed `kit check`, genuine dev evaluation, and real `artifacts/` remain outstanding.** Kaggle account submission status cannot be independently verified here. No PLE dev score is claimed. See the strict [free-only evaluation plan](docs/FREE_ONLY_QUALIFICATION.md) and [full qualification requirements](docs/QUALIFICATION_ACCESS_AND_RUN.md).
 
 ## What is implemented
 
@@ -31,7 +31,7 @@ python -m pip install -r requirements.txt pytest pytest-asyncio
 python -m pytest -q
 ```
 
-The 28 current tests run without calling a paid or live LLM. A test-only SDK stand-in is used when the OpenAI SDK is unavailable; production does not use it. This establishes syntax/protocol behavior, **not** engineering competence or the official `kit check` result.
+The 52 current tests run without calling a paid or live LLM. A test-only SDK stand-in is used when the OpenAI SDK is unavailable; production does not use it. This establishes syntax/protocol behavior, **not** engineering competence or the official `kit check` result.
 
 ## Reproduce official validation (WSL2 / Linux recommended)
 
