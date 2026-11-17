@@ -9,7 +9,7 @@ from check_private_gemma_readiness import grade_local_host
 def test_small_machine_flagged_unsuitable():
     r=grade_local_host(4,16,20,4)
     assert not r["plausible_local_gemma"]
-    assert not r["ple_docker_16_25_gib"]
+    assert not r["host_ram_at_least_16_25_gib"]
     assert not r["suggested_disk_60_gib"]
     assert not r["model_run_verified"]
 
@@ -66,3 +66,20 @@ def test_windows_ram_failure_reports_unknown_not_false_adequacy(monkeypatch):
     monkeypatch.setattr(scanner, "read_windows_ram_gib", lambda: 0.0)
     assert scanner.read_ram_gib() == 0.0
     assert not scanner.grade_local_host(8, scanner.read_ram_gib(), 100, 24)["plausible_local_gemma"]
+
+
+def test_ram_threshold_is_host_only_not_docker_allocation():
+    r=grade_local_host(20,23.71,14.51,6)
+    assert r["host_ram_at_least_16_25_gib"] is True
+    assert r["docker_memory_16_25_gib_verified"] is False
+    assert r["disk_shortfall_to_60_gib"] == 45.49
+    assert not r["plausible_local_gemma"]
+    assert "Host RAM is not Docker" in r["note"]
+
+
+def test_gemma_readiness_remains_advisory_even_with_good_host():
+    r=grade_local_host(20,64.0,125.0,24)
+    assert r["plausible_local_gemma"]
+    assert not r["docker_memory_16_25_gib_verified"]
+    assert r["disk_shortfall_to_60_gib"] == 0
+    assert r["model_run_verified"] is False
