@@ -38,6 +38,7 @@ class FakeSession:
     cancelled=asyncio.Event()
     last_summary=''
     def __init__(self):
+        self.cancelled = asyncio.Event()
         self.files = {}
         self.commands = []
     def time_left(self): return 500

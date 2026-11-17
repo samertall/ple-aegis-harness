@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import websockets
-from protocol import Session
+from protocol import Session, TaskCancelled
 from harness import solve
 
 logging.basicConfig(level=os.getenv('LOG_LEVEL', 'INFO').upper())
@@ -22,6 +22,13 @@ async def handle(ws):
         try:
             summary = await solve(session)
             await session.send({'type':'done', 'final_message': str(summary or session.last_summary)[:500_000]})
+        except TaskCancelled:
+            # The evaluator only grants a brief post-cancellation grace period.
+            try:
+                await session.send({'type':'done', 'final_message':
+                                    session.last_summary[:500_000]})
+            except Exception:
+                pass
         except Exception as e:
             log.exception('Agent failed')
             # Graceful completion allows grading of whatever was written.

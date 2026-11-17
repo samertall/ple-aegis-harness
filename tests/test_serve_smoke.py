@@ -95,3 +95,45 @@ async def test_complete_websocket_agent_loop_with_stubbed_model(monkeypatch):
                 elif frame['type']=='error':
                     pytest.fail(frame['message'])
             assert writes == [('/app/summary.md',b'Engineering memo')]
+
+@pytest.mark.asyncio
+async def test_cancel_during_model_request_returns_done_promptly(monkeypatch):
+    """PLE's cancellation grace period must not be spent awaiting a slow model."""
+    from types import SimpleNamespace
+    import harness
+
+    model_started = asyncio.Event()
+
+    class SlowModel:
+        def __init__(self, *a, **kw):
+            self.chat = SimpleNamespace(completions=SimpleNamespace(create=self.create))
+
+        async def create(self, **kw):
+            model_started.set()
+            await asyncio.sleep(120)
+            raise AssertionError('Cancelled model call should not finish')
+
+        async def close(self):
+            pass
+
+    monkeypatch.setenv('MODEL_NAME', 'claude-opus-5-5')
+    monkeypatch.setattr(harness.openai, 'AsyncOpenAI', SlowModel)
+
+    async with websockets.serve(serve.handle, '127.0.0.1', 0, ping_interval=None) as server:
+        port = server.sockets[0].getsockname()[1]
+        async with websockets.connect(f'ws://127.0.0.1:{port}') as ws:
+            await ws.send(json.dumps({
+                'type':'task', 'protocol':1, 'instruction':'Build an engineering memo',
+                'workdir':'/app', 'limits':{'agent_timeout_sec':120}
+            }))
+            frame = json.loads(await asyncio.wait_for(ws.recv(), timeout=3))
+            assert frame['type'] == 'exec'
+            await ws.send(json.dumps({
+                'type':'result', 'id':frame['id'], 'exit_code':0,
+                'output':'/app',
+            }))
+            await asyncio.wait_for(model_started.wait(), timeout=3)
+            await ws.send(json.dumps({'type':'cancel', 'reason':'timeout'}))
+            final = json.loads(await asyncio.wait_for(ws.recv(), timeout=2))
+            assert final['type'] == 'done'
+            assert isinstance(final['final_message'], str)

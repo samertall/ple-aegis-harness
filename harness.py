@@ -139,6 +139,30 @@ async def run_tool(session, mcp, call):
     except (KeyError,ValueError,TaskFailure,TaskCancelled,RuntimeError,TypeError) as e:
         return f'Tool error: {type(e).__name__}: {str(e)[:600]}'
 
+async def wait_for_model_or_cancel(client, req, session, timeout):
+    """Abort in-flight model traffic when the evaluator requests cancellation.
+
+    PLE keeps the socket open briefly to receive the final done message.
+    Waiting on a slow model past cancellation forfeits that opportunity.
+    """
+    request = asyncio.create_task(client.chat.completions.create(**req))
+    cancelled = asyncio.create_task(session.cancelled.wait())
+    try:
+        finished, _ = await asyncio.wait(
+            {request, cancelled}, timeout=timeout,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        if cancelled in finished or session.cancelled.is_set():
+            raise TaskCancelled('Evaluator cancelled task')
+        if request in finished:
+            return await request
+        raise asyncio.TimeoutError('Model call exceeded remaining task budget')
+    finally:
+        for task in (request, cancelled):
+            if not task.done(): task.cancel()
+        await asyncio.gather(request, cancelled, return_exceptions=True)
+
+
 async def model_call(client, session, messages, use_tools, model):
     attempts = 0
     while True:
@@ -153,8 +177,11 @@ async def model_call(client, session, messages, use_tools, model):
                 req.update(tool_choice='none')
             # Keep model compatibility broad: no reasoning_effort parameter
             # (unsupported by some sponsored models).
-            reply = await asyncio.wait_for(client.chat.completions.create(**req),
-                         timeout=min(1600, max(4, left-(3 if not use_tools else reserve_for(session)))) if left is not None else 1600)
+            reply = await wait_for_model_or_cancel(
+                client, req, session,
+                timeout=min(1600, max(4, left-(3 if not use_tools else reserve_for(session))))
+                if left is not None else 1600,
+            )
             if reply.usage:
                 details = getattr(reply.usage,'prompt_tokens_details',None)
                 await session.usage(model,reply.usage.prompt_tokens or 0,
