@@ -1,79 +1,67 @@
-# Genuine FREE Gemini 3.8 Flash evaluation — Aegis PLE
+# Aegis PLE — genuine Gemini 3.8 Flash with NO BILLING
 
-This strategy replaces the previous sponsored Claude configuration. The committed submission specifies **google-cloud/gemini-3.8-flash**. A local LiteLLM proxy connects the *same actual model* available on Google AI Studio Free Tier, using a model-alias named gemini-3.8-flash. It is **not** acceptable to label one model as another; this setup explicitly keeps both endpoints on Gemini 3.8 Flash.
+This repository's sponsored competition model is **google-cloud/gemini-3.8-flash**. A local LiteLLM proxy calls the **same named Gemini 3.8 Flash model** through Google AI Studio's unbilled Free Tier. This is a real LLM, not the deterministic fake model used by protocol CI. It is not a claim that AI Studio and the competition gateway are configured identically.
 
-Sources:
-- Google's official PLE models: https://github.com/google-research/ple/blob/main/docs/models.md
-- PLE local evaluation: https://github.com/google-research/ple/blob/main/eval/README.md
-- Gemini 3.8 Flash pricing: https://aistudio.google.com/docs/pricing#gemini-3.8-flash
-- Google AI Studio API keys: https://aistudio.google.com/api-keys
+Google source: https://aistudio.google.com/docs/pricing#gemini-3.8-flash (Free Tier standard input/output). Google-supported PLE model: https://github.com/google-research/ple/blob/main/docs/models.md. Official 29-task runner: https://github.com/google-research/ple/blob/main/eval/README.md.
 
-## Absolute no-spending guard
+## Hard zero-spending condition
 
-1. In Google AI Studio https://aistudio.google.com/projects ensure the project holding the key explicitly says **Free Tier**, without a billing account. An existing billing-linked Google Cloud project is **not acceptable** for this free-only run.
-2. Use a new or existing API key from that **unbilled** Free Tier project. Do not share a key in chat, commits, or CI logs.
-3. Gemini 3.8 Flash currently lists free-of-charge standard inference up to project-specific rate and daily limits. Limits vary. When reached, stop and wait until the free quota resets. Do NOT upgrade billing to continue.
-4. Google may use Free Tier prompts and responses to improve its products. Check this against your legal/benchmark restrictions and privacy requirements.
-5. The PLE judge can use Gemini 3.8 Flash through the same proxy, but the official leaderboard judge is Claude Opus 5.5; local rubric results are therefore approximations, not official leaderboard grades.
+Only use an API key from a project that shows **Free Tier**, with **no billing account linked**, at https://aistudio.google.com/projects. Do not choose Set up billing, upgrade, purchase credits, or use a Google Cloud Vertex AI key. Free Tier requests are rate-limited and may return 429; stop or resume after free quota resets rather than paying. Google says data sent through its Free Tier may be used to improve its products; check your Hugging Face gated-data commitments and eligibility before uploading any task contents. An API key's Free Tier status cannot be established from its prefix; confirm it visually in AI Studio first.
 
-## Machine requirements — local only
+## Hardware
 
-A Windows WSL2/Docker Desktop machine is the practical zero-rental-cost route. The official kit recommends at least 6 available CPUs, 16.25GB memory to Docker and approximately 10GB base-image space plus about 17GB world images and free space for task data. Have adequate additional free disk space and install git, uv, Docker Desktop/WSL2 and Harbor 0.20.0. GitHub free hosted runners are generally too small for the full 29-task job; do not provision any paid runner.
+Use a computer you already own, not a paid virtual machine. The official PLE kit calls for at least 6 CPU cores and 16.25 GiB of Docker-available RAM, plus around 10 GiB for base images, around 17 GiB for world images, and additional task-data storage. A standard free hosted GitHub Actions runner is usually too small for the complete benchmark. On Windows use Docker Desktop with WSL2 integration and clone both repositories into the Linux filesystem under the home directory.
 
-The PLE tasks are gated; you must already have HF approval and a read token (already verified in GitHub Actions). Keep secrets outside Git.
+## Secure first-time setup (Windows WSL2 Ubuntu)
 
-## Local installation
+Install Docker Desktop with WSL2 integration, Git, Python/uv, and Harbor:
 
-Clone the public projects SIDE BY SIDE in your WSL2 Linux home directory:
+    uv tool install harbor==0.20.0 --with websockets
+
+Clone the projects side-by-side inside WSL2:
 
     cd ~
     git clone https://github.com/google-research/ple.git
     git clone https://github.com/samertall/ple-aegis-harness.git
-    uv tool install harbor==0.20.0 --with websockets
+    cd ~/ple-aegis-harness
+    bash scripts/configure_free_local.sh
 
-Set the following only in the WSL2 shell (not in any tracked file):
+The setup script asks you to confirm the AI Studio project is an UNBILLED Free Tier project. Enter the Gemini API key and approved Hugging Face dataset read token directly into the hidden terminal prompts. Credentials are stored only in ~/.config/aegis-ple/free.env, outside Git, with file permissions 600. Do not paste keys into ChatGPT, shell command history, screenshots, logs or the Git repository.
 
-    export HF_TOKEN='your Hugging Face read token'
-    export GEMINI_API_KEY='API key from a Free Tier AI Studio project WITHOUT billing'
-    export MODEL_PROXY_KEY="sk-$(openssl rand -hex 24)"
-    export AEGIS_FREE_ONLY=YES
-
-**Do not put the literal placeholder strings above into a shell as real credentials.**
-Never upload this shell's history, environment, or secrets to GitHub.
-
-Start the **real** Gemini 3.8 Flash proxy in terminal A:
+In terminal A run:
 
     cd ~/ple-aegis-harness
     bash scripts/start_free_gemini_proxy.sh
 
-Then in terminal B, reuse the same MODEL_PROXY_KEY created in terminal A (must be exactly the same secret) and the HF token:
+The proxy listens on port 4000; on Linux it must accept connections from Docker's bridge interface. Do not expose the port to the public Internet. If firewall settings are available, limit access to localhost and the trusted Docker bridge.
 
-    export MODEL_PROXY_URL=http://127.0.0.1:4000
-    export MODEL_PROXY_KEY='same random local proxy key used to start proxy'
-    export HF_TOKEN='your Hugging Face read token'
-    export JUDGE_MODEL=gemini-3.8-flash
-    cd ~/ple
-    uv run python -m kit validate ../ple-aegis-harness
-    uv run python -m kit check ../ple-aegis-harness
+In terminal B run:
 
-The first full kit check can finish with an artifacts warning because the real dev export has not yet been generated. Model, listen, smoke and MCP stages must pass with the **real Gemini API**, not the offline mock.
+    cd ~/ple-aegis-harness
+    bash scripts/run_free_dev.sh smoke
 
-For the first genuinely measured dev task:
+This uses **real Gemini Free Tier API requests** only after local Free Tier confirmation. The official kit performs model connectivity, WebSocket, a file-creation smoke task and MCP tool behavior. The full kit may still report not ready because authentic benchmark artifacts are absent.
 
-    uv run python eval/run.py ../ple-aegis-harness --tasks data-center-site-model --trials 1
+To evaluate a single real task first, after smoke passes:
 
-This is a legitimate engineering task and may take hours. Do not describe an artifact as measured before the evaluator finishes. The official dev task documents are private/gated; keep those files out of public logs and repository source.
+    bash scripts/run_free_dev.sh task data-center-site-model
 
-For all 29 tasks, with actual Free Tier usage within quota:
+Then complete all 29 tasks, one at a time to limit free-tier quota pressure:
 
-    uv run python eval/run.py ../ple-aegis-harness --trials 1
-    uv run python -m kit artifacts ../ple-aegis-harness
+    bash scripts/run_free_dev.sh all
 
-When the run completes, commit original unpacked artifacts/ from the evaluator and run the full official checks again. Some tasks use an LLM judge; pass JUDGE_MODEL=gemini-3.8-flash to the same proxy. Its judge rubric scores are only approximations of the competition's Claude Opus 5.5 judge.
+The PLE exporter creates the required unpacked artifacts/ folder and original manifest. It may take many hours and several free-quota windows. Do not fabricate or modify the manifest. The free-tier model may fail on complex tasks; report failures accurately.
 
-## Expected limits
+After completion:
 
-- The free Gemini API may throttle or reject sustained requests (429/503). Respect the rate limits; pausing between tasks or retries can be necessary.
-- Each public task allows up to six hours. A complete sequential run may need substantial wall-clock time and local electricity. Local electricity charges, if any, are not model/API charges.
-- Official exporter must create manifest.json. Do not synthesize or edit grader artifacts, borrow other entrants' outputs, or substitute the deterministic mock.
-- Free Tier access and quota are **not yet verified for this particular AI Studio key**; no real dev score is claimed by committing this configuration alone.
+    bash scripts/run_free_dev.sh artifacts
+    cd ~/ple-aegis-harness
+    git add -A artifacts
+    git commit -m "Authentic PLE 29-task evaluator artifacts"
+    git push
+
+Then run the official real-model kit check again, calculate genuine scored metrics, regenerate score/cost and failure-breakdown figures from those metrics, and update Kaggle with the **new** 40-character final commit SHA. The competition's default rubric judge is Claude Opus 5.5; this free setup uses Gemini 3.8 Flash instead, so local rubric scores may differ from the official final judge.
+
+## Important limitations
+
+This is a **candidate path**, not proof that your AI Studio project offers enough free quota to finish all 29 tasks. Until the real model-backed run has completed and artifacts pass the official checker, Aegis PLE is not fully qualified. The no-billing requirement takes priority over finishing within a single day.
