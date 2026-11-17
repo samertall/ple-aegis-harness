@@ -1,0 +1,67 @@
+name: Free Gemini proxy startup (NO model inference)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/free_gemini_proxy.yaml'
+      - 'scripts/start_free_gemini_proxy.sh'
+      - 'scripts/configure_free_local.sh'
+      - '.github/workflows/free-gemini-proxy-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  boot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      AEGIS_FREE_ONLY: 'YES'
+      GEMINI_API_KEY: 'OFFLINE_CI_FAKE_KEY_NO_INFERENCE'
+      MODEL_PROXY_KEY: 'sk-local-offline-ci-test-key-no-cost'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Check shell syntax without API access
+        run: bash -n scripts/start_free_gemini_proxy.sh scripts/configure_free_local.sh scripts/run_free_dev.sh
+      - name: Start LiteLLM proxy with a deliberately INVALID dummy provider key
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash scripts/start_free_gemini_proxy.sh > "$RUNNER_TEMP/litellm.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/proxy.pid"
+          echo 'Local proxy process launched; NO real provider token is present.'
+      - name: Check local /v1/models endpoint only (NEVER call /chat/completions)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for i in $(seq 1 160); do
+            if curl --max-time 2 --silent --show-error --fail \
+              -H 'Authorization: Bearer sk-local-offline-ci-test-key-no-cost' \
+              http://127.0.0.1:4000/v1/models > "$RUNNER_TEMP/local-models.json" 2>/dev/null; then
+              break
+            fi
+            if ! kill -0 "$(cat "$RUNNER_TEMP/proxy.pid")" 2>/dev/null; then
+              echo '::error::LiteLLM proxy stopped before ready'
+              tail -70 "$RUNNER_TEMP/litellm.log" | sed -E 's/(AIza|hf_)[A-Za-z0-9_-]+/[REDACTED]/g'
+              exit 1
+            fi
+            sleep 3
+          done
+          [[ -s "$RUNNER_TEMP/local-models.json" ]] || { echo '::error::LiteLLM proxy did not respond'; exit 1; }
+          python - <<'PY'
+          import json,os,pathlib
+          f=pathlib.Path(os.environ["RUNNER_TEMP"])/"local-models.json"
+          models={x.get("id") for x in json.loads(f.read_text()).get("data",[])}
+          assert "gemini-3.8-flash" in models,models
+          assert "gemini-3.8-flash-judge" in models,models
+          print("Free Tier Gemini model aliases configured; NO actual Gemini API requests made.")
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a") as out:
+              out.write("LiteLLM proxy local startup and model aliases passed. Dummy provider key; NO inference, NO billing, NOT a benchmark.\n")
+          PY
+      - name: Stop local proxy
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$RUNNER_TEMP/proxy.pid" ]]; then
+            kill "$(cat "$RUNNER_TEMP/proxy.pid")" 2>/dev/null || true
+          fi
