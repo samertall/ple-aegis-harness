@@ -17,21 +17,24 @@ GIB = 1024 ** 3
 def grade_local_host(cpu_count, ram_gib, free_disk_gib, gpu_vram_gib):
     """Advisory only: true capacity depends on model quantization/context/runtime."""
     cpu_ok = cpu_count >= 6
-    docker_ram_ok = ram_gib >= 16.25
+    # Physical host RAM does NOT establish the memory allocated to Docker/WSL.
+    host_ram_ok = ram_gib >= 16.25
     disk_ok = free_disk_gib >= 60
     # Gemma 4 26B A4B Q4 weighs roughly 16-19GB before KV/context.
     plausible_gpu = gpu_vram_gib >= 24
     plausible_ram_only = ram_gib >= 48
     return {
         "cpu_6_cores": cpu_ok,
-        "ple_docker_16_25_gib": docker_ram_ok,
+        "host_ram_at_least_16_25_gib": host_ram_ok,
+        "docker_memory_16_25_gib_verified": False,
+        "disk_shortfall_to_60_gib": round(max(0.0, 60.0 - free_disk_gib), 2),
         "suggested_disk_60_gib": disk_ok,
         "plausible_local_gemma": bool(
-            cpu_ok and docker_ram_ok and disk_ok
+            cpu_ok and host_ram_ok and disk_ok
             and (plausible_gpu or plausible_ram_only)
         ),
         "model_run_verified": False,
-        "note": "Estimate only; local Gemma+PLE memory and speed must be validated on this computer.",
+        "note": "Host RAM is not Docker/WSL allocated memory. Private Gemma+PLE capacity and speed require separate validation.",
     }
 
 
@@ -118,6 +121,8 @@ def main():
             "Verify WSL2 and Docker resources separately before running PLE."
         )
     out["readiness"] = grade_local_host(cpu,ram,disk,gpu)
+    out["readiness"]["ple_docker_daemon_verified"] = out["docker_available"]
+    out["readiness"]["ple_local_evaluation_ready"] = False  # hardware grade alone cannot verify a real evaluator
     print(json.dumps(out, indent=2))
     print("This check is OFFLINE; no cloud, model inference, download or PLE task used.")
 
