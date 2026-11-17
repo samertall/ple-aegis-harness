@@ -8,7 +8,7 @@
 ## Passed (verified)
 
 - Open-source harness, MIT license, supported google-cloud/gemini-3.8-flash model configuration
-- 21 protocol, WebSocket, offline model-fixture and integration tests (no paid model calls)
+- 28 protocol, WebSocket, offline model-fixture, free-tier configuration and integration tests (no paid model calls)
 - Official PLE kit validate (submission configuration)
 - Official PLE kit build (real competition Docker serve image)
 - Public GitHub repository and Actions CI
