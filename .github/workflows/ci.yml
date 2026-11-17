@@ -1,0 +1,24 @@
+name: Local static QA (not official PLE validation)
+on:
+  push:
+  pull_request:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install local smoke dependencies
+        run: python -m pip install 'pytest>=8,<10' 'pytest-asyncio>=1,<2' 'websockets>=15,<17'
+      - name: Compile code
+        run: python -m compileall -q serve.py harness.py protocol.py mcp_bridge.py scripts
+      - name: Run mocked protocol and harness tests
+        run: python -m pytest -q
+      - name: Report static preflight (expected to flag missing genuine artifacts)
+        run: python scripts/preflight.py --json > preflight.json || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: static-preflight
+          path: preflight.json
