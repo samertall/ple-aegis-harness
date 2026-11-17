@@ -1,6 +1,13 @@
 # Aegis PLE — finish qualification with genuine evidence
 
-Current state: the public source passes 16 local protocol/integration tests, the official PLE configuration validator, and the official Docker image build. **This is NOT a complete competition submission.** No 29-task artifact export has been measured.
+Current state: the public source passes 17 local protocol/integration tests, the official PLE configuration validator, and the official Docker image build. **This is NOT a complete competition submission.** No 29-task artifact export has been measured.
+
+
+## Current dataset-access status
+
+- The user has confirmed that Hugging Face approved access to the gated dev dataset.
+- The user reported adding a Hugging Face access token to GitHub Actions secrets on 17 November 2026. **This report is not proof that `PLE_HF_TOKEN` is present or valid:** the separate non-billable GitHub Actions readiness workflow checks presence; the eventual official benchmark run must verify actual dataset access.
+- Model proxy credentials and a suitable private Docker runner remain separate requirements. Never log tokens, paste them into chat, or commit them.
 
 ## Authorize benchmark access
 
