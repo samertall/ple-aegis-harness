@@ -2,6 +2,10 @@
 # Real, free-tier Gemini 3.8 Flash proxy — never runs if explicit safety gate is absent.
 # Requires Gemini key attached to an UNBILLED Google AI Studio Free Tier project.
 set -Eeuo pipefail
+CONFIG_PATH="$HOME/.config/aegis-ple/free.env"
+if [[ -f "$CONFIG_PATH" ]]; then
+  source "$CONFIG_PATH"
+fi
 if [[ "$(printenv AEGIS_FREE_ONLY || true)" != "YES" ]]; then
   echo "Refusing to start: set AEGIS_FREE_ONLY=YES only after verifying AI Studio displays Free Tier (no billing)." >&2
   exit 2
