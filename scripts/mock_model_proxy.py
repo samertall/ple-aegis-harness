@@ -10,7 +10,7 @@ import re
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-MODEL = "claude-opus-5-5"
+MODEL = "gemini-3.8-flash"
 TOKEN = "local-offline-protocol-test-only"
 
 def make_call(name, args):

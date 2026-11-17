@@ -1,0 +1,15 @@
+# Aegis PLE: real Gemini 3.8 Flash on AI Studio Free Tier only.
+# This is NOT an offline mock. Requests consume ONLY an unbilled free-tier key.
+# Two aliases target the same actual Gemini 3.8 Flash model.
+model_list:
+  - model_name: gemini-3.8-flash
+    litellm_params:
+      model: gemini/gemini-3.8-flash
+      api_key: os.environ/GEMINI_API_KEY
+  - model_name: gemini-3.8-flash-judge
+    litellm_params:
+      model: gemini/gemini-3.8-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+general_settings:
+  master_key: os.environ/MODEL_PROXY_KEY

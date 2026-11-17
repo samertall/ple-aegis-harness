@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from mock_model_proxy import simulated_response
 
 def request(task):
-    return {"model": "claude-opus-5-5", "messages": [{"role": "user", "content": task}]}
+    return {"model": "gemini-3.8-flash", "messages": [{"role": "user", "content": task}]}
 
 def called(reply):
     return reply["choices"][0]["message"].get("tool_calls", [])

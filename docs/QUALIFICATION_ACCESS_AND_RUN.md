@@ -12,7 +12,7 @@ Current state: the public source passes 17 local protocol/integration tests, the
 ## Authorize benchmark access
 
 1. On [Hugging Face](https://huggingface.co/datasets/google/physical-engineerings-last-exam), sign in, request and accept the dataset's gated access conditions, and create a **read-scoped** token for the approved account.
-2. Supply an authorized model gateway for *local* PLE tests. The competition Stage 2 evaluator supplies sponsored Google Cloud model keys, but **does not supply free local-development keys**. See [official PLE model setup](https://github.com/google-research/ple/blob/main/docs/models.md). Model/judge API usage can incur charges. Do not share keys in ChatGPT or Git.
+2. For free-only local PLE tests, use the documented Gemini 3.8 Flash AI Studio Free Tier via docs/FREE_GEMINI_RUNBOOK.md; never use a billing-enabled API key. The competition Stage 2 evaluator supplies sponsored Google Cloud model keys but does not provide local development keys. See [official PLE model setup](https://github.com/google-research/ple/blob/main/docs/models.md). Model/judge API usage can incur charges. Do not share keys in ChatGPT or Git.
 3. Provision a Linux/WSL2 machine with Docker and the [official kit's required resources](https://github.com/google-research/ple/blob/main/eval/README.md). For GitHub Actions, register a self-hosted runner labelled **ple** (as well as linux/x64) with at least 6 CPUs, 20 GB RAM, and sufficient disk; higher resources are needed for concurrent trials.
 
 ## Option A — run on your own Linux / WSL2 machine

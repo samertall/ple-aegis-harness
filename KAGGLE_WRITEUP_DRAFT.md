@@ -2,7 +2,7 @@
 
 **GitHub repository:** https://github.com/samertall/ple-aegis-harness  
 **Exact submission commit SHA (40 characters):** `[INSERT FINAL 40-CHAR SHA AFTER COMMITTING ACTUAL 29-TASK ARTIFACTS]`  
-**Target sponsored model:** `google-cloud/claude-opus-5-5`  
+**Target sponsored model:** `google-cloud/gemini-3.8-flash`  
 **Status:** **DRAFT — DO NOT SUBMIT WITHOUT OFFICIAL DEV EVALUATION**
 
 > **Hypothesis, not yet a measured finding:** A long-horizon engineering agent can improve deliverable reliability by treating evidence collection and output verification as explicit phases rather than stopping after the first plausible answer.
