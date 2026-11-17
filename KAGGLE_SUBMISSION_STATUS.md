@@ -8,7 +8,7 @@
 ## Passed (verified)
 
 - Open-source harness, MIT license, supported google-cloud/gemini-3.8-flash model configuration
-- 52 protocol, WebSocket, offline model-fixture, free-tier configuration, diagnostics and integration tests (no paid model calls)
+- 57 protocol, WebSocket, offline model-fixture, free-tier configuration, diagnostics and integration tests (no paid model calls)
 - Official PLE kit validate (submission configuration)
 - Official PLE kit build (real competition Docker serve image)
 - Public GitHub repository and Actions CI
@@ -39,3 +39,7 @@ The image files 02_score_vs_cost.png and 03_failure_breakdown.png are labelled N
 See docs/FREE_ONLY_QUALIFICATION.md and docs/REAL_GEMINI_FREE_SMOKE_RESULTS.md. The manual billable 29-task workflow must NOT be triggered under the user's free-only requirement. Organizer clarification remains required. It refuses to run without explicit cost approval, a suitable dedicated runner, and credentials. Never put keys in ChatGPT or public Git.
 
 **No fabricated evaluation artifacts or scores have been generated.**
+
+## Zero-cost alternative under consideration
+
+Google-approved `google-cloud/gemma-4-26b` uses open weights that can be run privately if the participant already owns sufficiently capable hardware. The project now provides an offline [hardware readiness check](scripts/check_private_gemma_readiness.py) and [private Gemma fallback guidance](docs/PRIVATE_GEMMA_FALLBACK.md). This option was **not** deployed or evaluated. The current selected model remains Gemini 3.8 Flash; never mix artifact exports across models.
