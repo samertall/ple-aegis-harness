@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 28
     env:
       AEGIS_FREE_ONLY: "YES"
-      GEMINI_API_KEY: ${{ secrets.PLE_GEMINI_API_KEY }
+      GEMINI_API_KEY: ${{ secrets.PLE_GEMINI_API_KEY }}
       MODEL_PROXY_KEY: sk-aegis-ephemeral-ci-local-proxy-not-user-key
       MODEL_PROXY_URL: http://127.0.0.1:4000
       JUDGE_MODEL: gemini-3.8-flash
@@ -118,7 +118,7 @@ jobs:
         with:
           name: aegis-public-smoke-report
           path: |
-            ${{ runner.temp }/ple-public-check/check.json
+            ${{ runner.temp }}/ple-public-check/check.json
           retention-days: 7
           if-no-files-found: ignore
 
