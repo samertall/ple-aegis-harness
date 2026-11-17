@@ -10,6 +10,22 @@ Sources: https://ple-bench.com/competition/guide ; https://ai.google.dev/gemma/d
 
 ## Hardware feasibility check (no API calls, no downloads)
 
+### Windows PowerShell 5.1 (no WSL required for this check)
+
+From a PowerShell prompt, clone the repository once:
+
+    cd $HOME
+    git clone https://github.com/samertall/ple-aegis-harness.git
+    cd .\\ple-aegis-harness
+    py -3 .\\scripts\\check_private_gemma_readiness.py
+
+If the repository has already been cloned, use `cd $HOME\\ple-aegis-harness` and `git pull` instead of cloning again. If the Python launcher `py` is not available, try `python .\\scripts\\check_private_gemma_readiness.py` and verify that Python is installed. Do not use Linux shell paths or commands in PowerShell.
+
+The checker supports **Windows host memory** directly, without WSL. This only assesses physical host resources; Windows RAM does not establish WSL2/Docker-assigned memory. An actual PLE local Docker evaluation will still require Docker Desktop/WSL2 or another Linux/Docker-capable runtime.
+
+### WSL2 Ubuntu
+
+
 In WSL2 Ubuntu, with this repository cloned, run:
 
     cd ~/ple-aegis-harness
