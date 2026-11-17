@@ -23,7 +23,7 @@ def test_suitable_gpu_machine_is_still_unverified():
 def test_suitable_ram_only_host_is_only_plausible():
     r=grade_local_host(8,64,150,0)
     assert r["plausible_local_gemma"]
-    assert "Estimate only" in r["note"]
+    assert "Host RAM is not Docker" in r["note"]
 
 
 def test_gpu_does_not_override_missing_docker_ram():
