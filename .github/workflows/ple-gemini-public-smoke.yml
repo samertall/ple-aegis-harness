@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   public-smoke:
-    if: ${{ inputs.confirm_free_tier == 'YES_CONFIRMED_UNBILLED' && inputs.confirm_public_input == 'YES_PUBLIC_FIXTURES_ONLY' }
+    if: ${{ inputs.confirm_free_tier == 'YES_CONFIRMED_UNBILLED' && inputs.confirm_public_input == 'YES_PUBLIC_FIXTURES_ONLY' }}
     runs-on: ubuntu-latest
     timeout-minutes: 28
     env:
