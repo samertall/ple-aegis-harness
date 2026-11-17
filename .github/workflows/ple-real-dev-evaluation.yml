@@ -1,0 +1,118 @@
+name: PLE real 29-task dev evaluation (manual, billable)
+on:
+  workflow_dispatch:
+    inputs:
+      authorize_cost:
+        description: Approve external model and judge API charges
+        type: choice
+        required: true
+        options: [NO, YES_I_AUTHORIZE_MODEL_COSTS]
+        default: NO
+      parallel_trials:
+        description: Concurrent trial count, allocate sufficient memory
+        type: choice
+        required: true
+        options: ['1', '2', '3']
+        default: '1'
+permissions:
+  contents: write
+concurrency:
+  group: ple-real-evaluation
+  cancel-in-progress: false
+jobs:
+  evaluate:
+    if: ${{ inputs.authorize_cost == 'YES_I_AUTHORIZE_MODEL_COSTS' }}
+    runs-on: [self-hosted, linux, x64, ple]
+    timeout-minutes: 6900
+    env:
+      HF_TOKEN: ${{ secrets.PLE_HF_TOKEN }}
+      MODEL_PROXY_URL: ${{ secrets.PLE_MODEL_PROXY_URL }}
+      MODEL_PROXY_KEY: ${{ secrets.PLE_MODEL_PROXY_KEY }}
+      JUDGE_BASE_URL: ${{ secrets.PLE_JUDGE_BASE_URL }}
+      JUDGE_API_KEY: ${{ secrets.PLE_JUDGE_API_KEY }}
+      JUDGE_MODEL: ${{ vars.PLE_JUDGE_MODEL || 'claude-opus-5-5' }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: astral-sh/setup-uv@v6
+      - name: Check explicit approval, runner resources and secrets
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_REF" == 'refs/heads/main' ]] || { echo '::error::Use main branch'; exit 2; }
+          [[ -n "$HF_TOKEN" ]] || { echo '::error::Missing PLE_HF_TOKEN'; exit 2; }
+          [[ -n "$MODEL_PROXY_URL" ]] || { echo '::error::Missing PLE_MODEL_PROXY_URL'; exit 2; }
+          [[ -n "$MODEL_PROXY_KEY" ]] || { echo '::error::Missing PLE_MODEL_PROXY_KEY'; exit 2; }
+          if [[ -n "$JUDGE_API_KEY" && -z "$JUDGE_BASE_URL" ]]; then
+            echo '::error::PLE_JUDGE_API_KEY requires PLE_JUDGE_BASE_URL'; exit 2
+          fi
+          docker info >/dev/null || { echo '::error::Docker daemon unavailable'; exit 2; }
+          [[ "$(nproc)" -ge 6 ]] || { echo '::error::Runner requires >=6 CPUs'; exit 2; }
+          [[ "$(awk '/MemTotal/{print $2}' /proc/meminfo)" -ge 20000000 ]] || { echo '::error::Runner requires >=20GB RAM'; exit 2; }
+          [[ -z "$(git status --porcelain)" ]] || { echo '::error::Working tree is dirty'; exit 2; }
+      - name: Install official PLE kit and Harbor
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/google-research/ple.git "$RUNNER_TEMP/ple"
+          uv tool install harbor==0.20.0 --with websockets
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Official configuration validation and Docker build
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd "$RUNNER_TEMP/ple"
+          uv run python -m kit validate "$GITHUB_WORKSPACE"
+          uv run python -m kit build "$GITHUB_WORKSPACE" --rebuild
+      - name: Execute all 29 official development tasks
+        timeout-minutes: 6600
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          cd "$RUNNER_TEMP/ple"
+          uv run python eval/run.py "$GITHUB_WORKSPACE" --trials '${{ inputs.parallel_trials }}'
+      - name: Confirm genuine scored exporter records
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd "$RUNNER_TEMP/ple"
+          uv run python -m kit artifacts "$GITHUB_WORKSPACE"
+          python "$GITHUB_WORKSPACE/scripts/collect_observed_metrics.py" --json --csv "$RUNNER_TEMP/observed_tasks.csv" > "$RUNNER_TEMP/evaluation_summary.json"
+          python - <<'PY'
+          import json, os, pathlib
+          r=json.loads((pathlib.Path(os.environ["RUNNER_TEMP"])/"evaluation_summary.json").read_text())
+          if r["recorded_tasks"] != 29 or r["scored_tasks"] != 29:
+              raise SystemExit("Missing real 29-task coverage. Refusing to publish.")
+          print("All 29 dev tasks have local measured results.")
+          PY
+      - name: Commit original evaluator files and run full official checker
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git config user.name 'ple-qualification[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A artifacts/
+          git diff --cached --quiet && { echo '::error::No new evaluator artifacts'; exit 2; }
+          git commit -m 'PLE: genuine 29-task evaluator artifacts'
+          cd "$RUNNER_TEMP/ple"
+          uv run python -m kit check "$GITHUB_WORKSPACE" --rebuild
+          uv run python -m kit artifacts "$GITHUB_WORKSPACE"
+      - name: Publish verified artifacts commit
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          git push origin HEAD:main
+          echo "Evaluator artifacts commit: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Writeup analysis, figures and Kaggle submission remain separate.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Archive nonsecret metrics summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ple-observed-metrics-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/observed_tasks.csv
+            ${{ runner.temp }}/evaluation_summary.json
+          if-no-files-found: ignore
+          retention-days: 14
