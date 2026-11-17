@@ -3,14 +3,16 @@
 - [x] Original open-source harness code and MIT license prepared
 - [x] `submission.yaml` selects a permitted `google-cloud/*` model
 - [x] WebSocket protocol, task tools, MCP support implemented
-- [x] Local unit/protocol smoke tests run (16 passing on 2026-11-17)
+- [x] Local unit/protocol smoke tests run (21 passing on 2026-11-17)
 - [x] Cover and architecture figures created
 - [x] Local static preflight and guarded official check script prepared
 - [x] GitHub Actions mocked tests and official PLE configuration validation passed
 - [x] Official PLE Docker serve-image build passed
-- [x] Manual, explicit cost-approved dev evaluation workflow published
+- [x] Manual, explicit cost-approved dev evaluation workflow published (NOT triggered under free-only instructions)
+- [x] OFFLINE deterministic fake model checks and free Docker protocol preflight added (NOT real benchmark)
 - [ ] Official `uv run python -m kit check ../ple-aegis-harness` passes
-- [ ] Authorized 29-task dev set acquired via Hugging Face
+- [x] Gated development dataset read access approved and authenticated via GitHub Actions
+- [ ] Real model/judge endpoint and Docker-capable evaluation runner available without paid charges
 - [ ] Genuine full dev run produces `artifacts/` using `uv run python eval/run.py`
 - [ ] `uv run python -m kit artifacts ../ple-aegis-harness` passes
 - [ ] Two-model experimental comparison + genuine controlled ablations done
