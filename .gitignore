@@ -1,0 +1,10 @@
+.env
+*.env
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+metrics/actual_*.csv
+preflight.json
+*.log
+.DS_Store

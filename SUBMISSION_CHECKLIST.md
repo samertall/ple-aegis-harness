@@ -1,0 +1,21 @@
+# Competition submission gate
+
+- [x] Original open-source harness code and MIT license prepared
+- [x] `submission.yaml` selects a permitted `google-cloud/*` model
+- [x] WebSocket protocol, task tools, MCP support implemented
+- [x] Local unit/protocol smoke tests run (10 passing on 2026-11-17)
+- [x] Cover and architecture figures created
+- [x] Local static preflight and guarded official check script prepared
+- [x] GitHub Actions workflow for mocked tests prepared
+- [ ] Official `uv run python -m kit check ../ple-aegis-harness` passes
+- [ ] Authorized 29-task dev set acquired via Hugging Face
+- [ ] Genuine full dev run produces `artifacts/` using `uv run python eval/run.py`
+- [ ] `uv run python -m kit artifacts ../ple-aegis-harness` passes
+- [ ] Two-model experimental comparison + genuine controlled ablations done
+- [ ] Dev score vs cost measured; plot 02 regenerated
+- [ ] All 29 tasks reviewed; failure breakdown plot 03 regenerated
+- [ ] Real engineering case study and observed failures added to Writeup
+- [ ] Public GitHub repo populated with code and unpacked genuine dev artifacts
+- [ ] Committed GitHub SHA copied from `git rev-parse HEAD`
+- [ ] Kaggle Writeup ≤ 2,000 words, figures attached, repo Project Link included
+- [ ] Kaggle Writeup explicitly SUBMITTED (not left as draft)

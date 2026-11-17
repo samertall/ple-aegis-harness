@@ -1,0 +1,11 @@
+name: aegis-ple-verifier
+model_api: google-cloud/claude-opus-5-5
+install: >-
+  uv venv --python 3.12 /opt/harness/venv
+  && uv pip install --python /opt/harness/venv/bin/python -r {src}/requirements.txt
+serve: /opt/harness/venv/bin/python {src}/serve.py
+env:
+  LOG_LEVEL: "INFO"
+  MAX_AGENT_TURNS: "140"
+  MAX_COMPLETION_TOKENS: "12000"
+  VERIFY_RESERVE_SEC: "180"
