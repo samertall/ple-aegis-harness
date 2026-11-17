@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 GIB = 1024 ** 3
@@ -34,7 +35,36 @@ def grade_local_host(cpu_count, ram_gib, free_disk_gib, gpu_vram_gib):
     }
 
 
+def read_windows_ram_gib():
+    """Physical host memory from Windows kernel; not WSL/Docker allocation."""
+    try:
+        import ctypes
+
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", ctypes.c_ulong),
+                ("dwMemoryLoad", ctypes.c_ulong),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+
+        state = MEMORYSTATUSEX()
+        state.dwLength = ctypes.sizeof(state)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(state)):
+            return 0.0
+        return state.ullTotalPhys / GIB
+    except (AttributeError, OSError, ValueError):
+        return 0.0
+
+
 def read_ram_gib():
+    if sys.platform == "win32":
+        return read_windows_ram_gib()
     try:
         for line in Path("/proc/meminfo").read_text().splitlines():
             if line.startswith("MemTotal:"):
@@ -78,9 +108,15 @@ def main():
     disk = round(shutil.disk_usage(Path.home()).free / GIB, 2)
     gpu = round(read_gpu_vram_gib(), 2)
     out = {
+        "platform": sys.platform,
         "cpu_cores": cpu, "ram_gib": ram, "home_disk_free_gib": disk,
         "max_nvidia_gpu_vram_gib": gpu, "docker_available": docker_ready(),
     }
+    if sys.platform == "win32":
+        out["windows_note"] = (
+            "RAM is Windows host physical memory, NOT WSL2 or Docker allocated RAM. "
+            "Verify WSL2 and Docker resources separately before running PLE."
+        )
     out["readiness"] = grade_local_host(cpu,ram,disk,gpu)
     print(json.dumps(out, indent=2))
     print("This check is OFFLINE; no cloud, model inference, download or PLE task used.")
