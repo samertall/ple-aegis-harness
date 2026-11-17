@@ -2,7 +2,7 @@
 
 **Google – Agent Harness on Physical-Engineering's Last Exam (Kaggle, 2026)**
 
-> Status: an original, locally smoke-tested harness implementation and writeup scaffold. **Not a submission.** Official Docker `kit check`, 29-task dev evaluation, model endpoint usage, and Kaggle submission have **not** been completed. The `artifacts/` directory is a placeholder and MUST be replaced by `eval/run.py` before submission.
+> **Qualification status (17 November 2026):** This public repository passes 16 mocked protocol/integration tests and the official PLE `kit validate` and `kit build` steps on GitHub Actions. **Full model-backed `kit check`, the 29-task development evaluation, and real `artifacts/` remain outstanding.** Kaggle account submission status cannot be independently verified here. No PLE dev score is claimed. See [credential and evaluation setup](docs/QUALIFICATION_ACCESS_AND_RUN.md).
 
 ## What is implemented
 
@@ -31,7 +31,7 @@ python -m pip install -r requirements.txt pytest pytest-asyncio
 python -m pytest -q
 ```
 
-The ten tests run without calling an LLM. A test-only SDK stand-in is used when the OpenAI SDK is unavailable; production does not use it. This establishes syntax/protocol behavior, **not** engineering competence or the official `kit check` result.
+The 16 current tests run without calling an LLM. A test-only SDK stand-in is used when the OpenAI SDK is unavailable; production does not use it. This establishes syntax/protocol behavior, **not** engineering competence or the official `kit check` result.
 
 ## Reproduce official validation (WSL2 / Linux recommended)
 
@@ -83,7 +83,7 @@ export MODEL_PROXY_KEY='(your authorized proxy key)'
 bash scripts/official_commands.sh
 ```
 
-The script exits without generating fabricated data if prerequisites are missing. The supplied GitHub Actions workflow runs **mocked local tests only**, not the official Docker evaluator.
+The script exits without generating fabricated data if prerequisites are missing. GitHub Actions covers mocked tests **and** the official PLE `kit validate` and Docker `kit build`. A separate **manual, cost-gated** workflow can run all 29 official tasks only after external dataset/model credentials and a suitable self-hosted runner are configured; see `docs/QUALIFICATION_ACCESS_AND_RUN.md`.
 
 ## Ablation matrix
 
