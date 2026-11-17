@@ -35,7 +35,6 @@ jobs:
     env:
       AEGIS_FREE_ONLY: "YES"
       GEMINI_API_KEY: ${{ secrets.PLE_GEMINI_API_KEY }}
-      MODEL_PROXY_KEY: sk-aegis-ephemeral-ci-local-proxy-not-user-key
       MODEL_PROXY_URL: http://127.0.0.1:4000
       JUDGE_MODEL: gemini-3.8-flash
       PYTHONUNBUFFERED: "1"
@@ -45,6 +44,10 @@ jobs:
           fetch-depth: 0
       - uses: astral-sh/setup-uv@v6
 
+      - name: Generate ephemeral local proxy key
+        shell: bash
+        run: |
+          echo "MODEL_PROXY_KEY=sk-$(openssl rand -hex 24)" >> "$GITHUB_ENV"
       - name: Refuse missing credentials or billing approval
         shell: bash
         run: |
@@ -88,6 +91,7 @@ jobs:
           uv run python -m kit check "$GITHUB_WORKSPACE" \
             --work "$RUNNER_TEMP/ple-public-check" > "$RUNNER_TEMP/ple-public.log" 2>&1
           set -e
+          python "$GITHUB_WORKSPACE/scripts/diagnose_ple_check.py" "$RUNNER_TEMP/ple-public-check/check.json" --github-summary || true
           python - <<'PY'
           import json, os, pathlib, sys
           base=pathlib.Path(os.environ["RUNNER_TEMP"])
