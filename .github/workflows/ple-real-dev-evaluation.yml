@@ -6,8 +6,8 @@ on:
         description: Approve external model and judge API charges
         type: choice
         required: true
-        options: [NO, YES_I_AUTHORIZE_MODEL_COSTS]
-        default: NO
+        options: ['NO', 'YES_I_AUTHORIZE_MODEL_COSTS']
+        default: 'NO'
       parallel_trials:
         description: Concurrent trial count, allocate sufficient memory
         type: choice
