@@ -3,7 +3,7 @@
 - [x] Original open-source harness code and MIT license prepared
 - [x] `submission.yaml` selects a permitted `google-cloud/gemini-3.8-flash` sponsored model for the free-tier strategy
 - [x] WebSocket protocol, task tools, MCP support implemented
-- [x] Local unit/protocol smoke tests run (57 passing on 2026-11-17)
+- [x] Local unit/protocol smoke tests run (62 passing on 2026-11-17)
 - [x] Cover and architecture figures created
 - [x] Local static preflight and guarded official check script prepared
 - [x] GitHub Actions mocked tests and official PLE configuration validation passed
