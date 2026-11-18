@@ -19,8 +19,10 @@ jobs:
         run: |
           set -Eeuo pipefail
           [[ "$RUNNER_ENVIRONMENT" == github-hosted ]] || exit 2
-          git clone --depth 1 --branch official-template-baseline \
-            https://github.com/samertall/ple-aegis-harness.git "$RUNNER_TEMP/baseline"
+          git clone https://github.com/physical-engineerings-last-exam/submission-template.git "$RUNNER_TEMP/baseline"
+          # Same exact original commit; full history avoids the PLE kit's
+          # shallow-clone upload-pack/partial-history staging timeout.
+          test "$(git ls-remote --heads https://github.com/samertall/ple-aegis-harness.git refs/heads/official-template-baseline | cut -f1)" = "22c26a93a9e4974b16e4351faab0e860ff9fb24f"
           [[ "$(git -C "$RUNNER_TEMP/baseline" rev-parse HEAD)" == "22c26a93a9e4974b16e4351faab0e860ff9fb24f" ]] || {
             echo '::error::Baseline source changed; refuse stale provenance.'
             exit 2
