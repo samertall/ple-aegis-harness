@@ -1,0 +1,68 @@
+name: Free hosted runner capacity audit (NO inference)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ple-free-runner-capacity.yml'
+      - 'scripts/audit_free_runner.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    # Public-repository standard runner, not larger or self-hosted billed compute.
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm ephemeral GitHub-hosted runner and no external model secrets
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "${RUNNER_ENVIRONMENT:-}" == "github-hosted" ]] || { echo '::error::Refusing non-hosted runner'; exit 2; }
+          [[ "${GITHUB_REPOSITORY}" == "samertall/ple-aegis-harness" ]] || exit 2
+          echo 'Public hosted-runner audit; NO API, dataset, model or purchased compute.'
+      - name: Measure capacity before ephemeral-only cleanup
+        run: |
+          python3 scripts/audit_free_runner.py before > "$RUNNER_TEMP/before.json"
+          cat "$RUNNER_TEMP/before.json"
+      - name: Reclaim unused preinstalled SDKs on THIS EPHEMERAL RUNNER ONLY
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "${RUNNER_ENVIRONMENT:-}" == "github-hosted" ]] || exit 2
+          [[ "$GITHUB_REPOSITORY" == "samertall/ple-aegis-harness" ]] || exit 2
+          # Do not touch /home/runner/work, model files, /mnt/data or any user's PC.
+          for path in /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/powershell; do
+            if [[ -d "$path" ]]; then
+              echo "Temporary hosted-runner SDK cache only: $path"
+              sudo rm -rf -- "$path"
+            fi
+          done
+          sync
+      - name: Measure final free resources and decide feasibility
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/audit_free_runner.py after > "$RUNNER_TEMP/after.json"
+          python3 scripts/audit_free_runner.py compare "$RUNNER_TEMP/before.json" "$RUNNER_TEMP/after.json" \
+            > "$RUNNER_TEMP/capacity-report.json"
+          cat "$RUNNER_TEMP/capacity-report.json"
+          python3 - <<'PY'
+          import json, os, pathlib
+          r=json.loads((pathlib.Path(os.environ["RUNNER_TEMP"])/"capacity-report.json").read_text())
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f:
+              f.write("## Aegis PLE free hosted runner capacity\n")
+              f.write(f"- CPU: {r['after']['cpu_count']} (full PLE recommends >=6)\n")
+              f.write(f"- RAM: {r['after']['physical_ram_gib']} GiB (full PLE recommends >=16.25)\n")
+              f.write(f"- Root free disk: {r['before']['disk_free_gib']} -> {r['after']['disk_free_gib']} GiB\n")
+              f.write(f"- Full PLE local runner ready: **{r['full_ple_runner_ready']}**\n")
+              f.write("- This is a resource audit, not PLE task execution or score evidence.\n")
+              f.write("- Zero paid service calls; nothing deleted from the participant's PC.\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: free-runner-capacity-report
+          path: ${{ runner.temp }}/capacity-report.json
+          retention-days: 7
+          if-no-files-found: error
