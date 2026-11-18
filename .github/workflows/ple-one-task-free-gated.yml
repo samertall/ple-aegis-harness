@@ -1,0 +1,154 @@
+name: One genuine PLE dev task (manual, free-only, permission-gated)
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: Public dev task to run ONCE (genuine evaluator output; no simulated model)
+        required: true
+        type: choice
+        options:
+          - data-hall-mep-routing
+          - data-center-site-model
+          - wind-diaphragm-shear
+        default: data-hall-mep-routing
+      confirm_free_tier:
+        description: I have verified the Gemini project is UNBILLED Free Tier (no billing attached)
+        required: true
+        type: choice
+        options: ['NO', 'YES_UNBILLED']
+        default: 'NO'
+      confirm_gated_data_permission:
+        description: Organizer confirmed that unpaid Gemini API is permitted to process gated PLE task data
+        required: true
+        type: choice
+        options: ['NO', 'YES_WRITTEN_ORGANIZER_CLEARANCE']
+        default: 'NO'
+      confirm_ephemeral_resource_limits:
+        description: Accept 4 CPU / ~15.6 GiB RAM runner may fail for some tasks; never upgrade to paid compute
+        required: true
+        type: choice
+        options: ['NO', 'YES_FREE_RUNNER_ONLY']
+        default: 'NO'
+permissions:
+  contents: read
+concurrency:
+  group: aegis-ple-real-single-task-free-only
+  cancel-in-progress: false
+jobs:
+  one-genuine-task:
+    if: ${{ inputs.confirm_free_tier == 'YES_UNBILLED' && inputs.confirm_gated_data_permission == 'YES_WRITTEN_ORGANIZER_CLEARANCE' && inputs.confirm_ephemeral_resource_limits == 'YES_FREE_RUNNER_ONLY' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      AEGIS_FREE_ONLY: 'YES'
+      HF_TOKEN: ${{ secrets.PLE_HF_TOKEN }}
+      GEMINI_API_KEY: ${{ secrets.PLE_GEMINI_API_KEY }}
+      MODEL_PROXY_URL: http://127.0.0.1:4000
+      JUDGE_MODEL: gemini-3.8-flash
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+      - name: Assert explicit no-spend and data-use approvals
+        shell: bash
+        env:
+          VERIFIED_FREE: ${{ inputs.confirm_free_tier }}
+          VERIFIED_DATA: ${{ inputs.confirm_gated_data_permission }}
+          VERIFIED_CPU: ${{ inputs.confirm_ephemeral_resource_limits }}
+        run: |
+          set -Eeuo pipefail
+          [[ "${RUNNER_ENVIRONMENT:-}" == github-hosted ]] || exit 2
+          [[ "${GITHUB_REPOSITORY}" == "samertall/ple-aegis-harness" ]] || exit 2
+          [[ "$VERIFIED_FREE" == "YES_UNBILLED" ]] || exit 2
+          [[ "$VERIFIED_DATA" == "YES_WRITTEN_ORGANIZER_CLEARANCE" ]] || exit 2
+          [[ "$VERIFIED_CPU" == "YES_FREE_RUNNER_ONLY" ]] || exit 2
+          [[ -n "$HF_TOKEN" && -n "$GEMINI_API_KEY" ]] || { echo '::error::Required protected secret absent'; exit 2; }
+          echo 'Explicit user confirmations verified. No paid compute or billed model is permitted.'
+      - name: Reclaim temporary runner disk ONLY (not participant storage)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted ]] || exit 2
+          for path in /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/powershell; do
+            if [[ -d "$path" ]]; then sudo rm -rf -- "$path"; fi
+          done
+          python3 scripts/audit_free_runner.py after
+      - name: Verify ephemeral runner is sufficient for a cautious trial
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          python3 - <<'PY'
+          import importlib.util
+          spec=importlib.util.spec_from_file_location("r","scripts/audit_free_runner.py")
+          mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+          s=mod.current_capacity()
+          print(f"Runner CPU={s['cpu_count']} RAM={s['physical_ram_gib']} GiB disk={s['disk_free_gib']} GiB")
+          if s['cpu_count']<4 or s['physical_ram_gib']<12 or s['disk_free_gib']<45:
+              raise SystemExit("FREE runner too small even for cautious single-task attempt; refusing")
+          PY
+      - name: Clone PLE evaluator
+        run: git clone --depth 1 https://github.com/google-research/ple.git "$RUNNER_TEMP/ple"
+      - name: Launch genuine Gemini proxy with fresh protected ephemeral key
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          echo "MODEL_PROXY_KEY=sk-$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+          # Keys added through GITHUB_ENV become available to next step.
+      - name: Start Gemini Free Tier proxy (no model substitution)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash scripts/start_free_gemini_proxy.sh > "$RUNNER_TEMP/ple-proxy.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/ple-proxy.pid"
+          for i in $(seq 1 100); do
+            if curl -fsS --max-time 2 -H "Authorization: Bearer $MODEL_PROXY_KEY" \
+              http://127.0.0.1:4000/v1/models >/dev/null 2>&1; then break; fi
+            if ! kill -0 "$(cat "$RUNNER_TEMP/ple-proxy.pid")" 2>/dev/null; then
+              echo '::error::Genuine Gemini proxy exited before ready'; exit 2
+            fi
+            sleep 2
+          done
+          curl -fsS --max-time 3 -H "Authorization: Bearer $MODEL_PROXY_KEY" \
+            http://127.0.0.1:4000/v1/models >/dev/null
+      - name: Execute ONE official PLE development task, real model and official grader
+        timeout-minutes: 323
+        shell: bash
+        env:
+          SELECTED_TASK: ${{ inputs.task_id }}
+        run: |
+          set -Eeuo pipefail
+          cd "$RUNNER_TEMP/ple"
+          # Only one genuine task. Failed quotas, timeouts and grader failures are not success.
+          uv run python eval/run.py "$GITHUB_WORKSPACE" --tasks "$SELECTED_TASK" --trials 1
+      - name: Validate original exporter artifacts (no fabrication)
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ -f "$GITHUB_WORKSPACE/artifacts/manifest.json" ]] || { echo '::error::No genuine export manifest'; exit 1; }
+          cd "$RUNNER_TEMP/ple"
+          uv run python -m kit artifacts "$GITHUB_WORKSPACE"
+          echo 'Artifacts generated by official evaluator; still require review before public commit.'
+      - name: Export original unmodified artifacts for human review
+        uses: actions/upload-artifact@v4
+        with:
+          name: genuine-ple-single-task-export
+          path: artifacts/
+          retention-days: 7
+          if-no-files-found: error
+      - name: Clearly report no full qualification
+        if: success()
+        shell: bash
+        run: |
+          echo '### Genuine PLE single-task evaluator export' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This run tested ONE task on an unbilled Free Tier; authentic evaluator results require inspection.' >> "$GITHUB_STEP_SUMMARY"
+          echo '**Other unrun dev tasks receive zero; complete 29-task evidence is NOT claimed.**' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No artifacts automatically committed or published.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Stop ephemeral proxy
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$RUNNER_TEMP/ple-proxy.pid" ]]; then
+            kill "$(cat "$RUNNER_TEMP/ple-proxy.pid")" 2>/dev/null || true
+          fi
