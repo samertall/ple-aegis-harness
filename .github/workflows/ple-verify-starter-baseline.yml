@@ -1,0 +1,63 @@
+name: Verify unchanged official starter baseline — Docker and artifact review
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/ple-verify-starter-baseline.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  official-starter-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Fetch isolated exact upstream starter commit from user's repo
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$RUNNER_ENVIRONMENT" == github-hosted ]] || exit 2
+          git clone --depth 1 --branch official-template-baseline \
+            https://github.com/samertall/ple-aegis-harness.git "$RUNNER_TEMP/baseline"
+          [[ "$(git -C "$RUNNER_TEMP/baseline" rev-parse HEAD)" == "22c26a93a9e4974b16e4351faab0e860ff9fb24f" ]] || {
+            echo '::error::Baseline source changed; refuse stale provenance.'
+            exit 2
+          }
+          grep -qx 'model_api: google-cloud/claude-opus-5-5' "$RUNNER_TEMP/baseline/submission.yaml"
+          echo "Confirmed exact published organizer template, no Aegis result substitution."
+      - name: Official kit validate, artifacts inspection, and Docker packaging
+        shell: bash
+        timeout-minutes: 31
+        run: |
+          set -Eeuo pipefail
+          git clone --depth 1 https://github.com/google-research/ple.git "$RUNNER_TEMP/ple"
+          cd "$RUNNER_TEMP/ple"
+          uv run python -m kit validate "$RUNNER_TEMP/baseline"
+          uv run python -m kit artifacts "$RUNNER_TEMP/baseline"
+          uv run python -m kit build "$RUNNER_TEMP/baseline" --rebuild
+      - name: Show verified provenance and historical template-run score (not new evaluation)
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, pathlib, os
+          p=pathlib.Path(os.environ["RUNNER_TEMP"])/"baseline"/"artifacts"/"manifest.json"
+          m=json.loads(p.read_text(encoding="utf-8"))
+          tasks=m["tasks"]
+          avg=sum(float(v.get("reward") or 0) for v in tasks.values())/29
+          assert len(tasks)==29
+          assert m["harness"]["model_api"]=="google-cloud/claude-opus-5-5"
+          assert m["harness"]["name"]=="my-harness"
+          with open(os.environ["GITHUB_STEP_SUMMARY"],"a",encoding="utf-8") as f:
+              f.write("## Official starter baseline — authenticated packaging test\n")
+              f.write("- Exact published template commit: \`22c26a93a9e4974b16e4351faab0e860ff9fb24f\`\n")
+              f.write("- Original model: Claude Opus 5.5 (unchanged)\n")
+              f.write(f"- Original template manifest: {len(tasks)} task entries; historical reported mean {avg:.4f}\n")
+              f.write("- This historical score was from the ORGANIZER TEMPLATE, NOT measured for Aegis.\n")
+              f.write("- Official kit artifacts and Docker build completed; full live kit check was NOT run.\n")
+              f.write("- Official kit warns original template manifest uses an older dev set. No files were edited.\n")
+              f.write("- Kaggle entry not submitted by this job.\n")
+              f.write("- No paid inference, gated dataset download, or changes to personal PC storage.\n")
+          print(f"Validated organizer baseline: {len(tasks)} manifest entries, historical mean {avg:.4f}; NOT an Aegis score")
+          PY
