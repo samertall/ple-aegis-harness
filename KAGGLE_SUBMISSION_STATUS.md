@@ -49,3 +49,19 @@ Google-approved `google-cloud/gemma-4-26b` uses open weights that can be run pri
 A successful public-repository GitHub standard runner audit recovered 18.66 GiB of temporary runner storage, with 105.86 GiB free disk at the end, 4 CPU cores and 15.61 GiB RAM. **It is below the full PLE resource guideline**, but an individual low-resource dev task might be possible. No participant files were touched. See docs/FREE_REMOTE_RUNNER_STRATEGY.md and GitHub Actions run 44248507186.
 
 A genuine ONE-task GitHub workflow is prepared but **manual and blocked by default** until an explicitly confirmed unbilled Gemini Free Tier project and written organizer authorization for gated task processing are provided. No genuine artifacts have been generated or committed. A credential-shape scanner prevents obvious API-key patterns being uploaded in artifacts; raw logs and grader artifacts still require human security review.
+
+## Official unchanged-starter fallback (18 November 2026)
+
+To preserve the user's no-billing, no-local-storage constraints, an **independent fallback branch** was added WITHOUT replacing Aegis main:
+- Baseline branch: https://github.com/samertall/ple-aegis-harness/tree/official-template-baseline
+- Baseline exact commit: `22c26a93a9e4974b16e4351faab0e860ff9fb24f`
+- Source: https://github.com/physical-engineerings-last-exam/submission-template (Apache 2.0)
+- Official template README explicitly states it may be submitted unchanged.
+- Exact SHA was pushed without modification. Its original `model_api` is `google-cloud/claude-opus-5-5`, Pi harness, and original `artifacts/` were retained.
+- Current official `kit validate` and offline `kit artifacts` completed on an ephemeral free GitHub runner (https://github.com/samertall/ple-aegis-harness/actions/runs/44250508248); **28/29 task folders usable, one empty**, and the kit WARNED that the template dev-set manifest refers to an older revision.
+- Historical manifest rewards average about **0.4912** over its 29 tasks; these are the ORGANIZER TEMPLATE results, not new Aegis measurements or a current regrade.
+- Baseline official Docker build run: https://github.com/samertall/ple-aegis-harness/actions/runs/44250909740 (verify current status before claiming pass).
+- Attributed Kaggle submission writeup draft: docs/KAGGLE_OFFICIAL_BASELINE_WRITEUP.md.
+- Kaggle **Draft/Submitted state has not been inspected or changed**. The exact starter baseline SHA must be entered in a Kaggle Writeup and explicitly submitted by the account holder.
+- DO NOT represent baseline results as original Aegis performance, or combine its artifacts with the Gemini Aegis harness on `main`. Winning and Stage 2 qualification are NOT guaranteed by passing artifact format checks.
+
