@@ -60,7 +60,7 @@ To preserve the user's no-billing, no-local-storage constraints, an **independen
 - Exact SHA was pushed without modification. Its original `model_api` is `google-cloud/claude-opus-5-5`, Pi harness, and original `artifacts/` were retained.
 - Current official `kit validate` and offline `kit artifacts` completed on an ephemeral free GitHub runner (https://github.com/samertall/ple-aegis-harness/actions/runs/44250508248); **28/29 task folders usable, one empty**, and the kit WARNED that the template dev-set manifest refers to an older revision.
 - Historical manifest rewards average about **0.4912** over its 29 tasks; these are the ORGANIZER TEMPLATE results, not new Aegis measurements or a current regrade.
-- Baseline official Docker build run: https://github.com/samertall/ple-aegis-harness/actions/runs/44250909740 (verify current status before claiming pass).
+- Baseline official Docker build: **PASSED** on a full checkout of the same exact upstream SHA, after diagnosing and correcting a shallow-checkout Git clone timeout. Proof: https://github.com/samertall/ple-aegis-harness/actions/runs/44251894365. The earlier failed shallow build run was not an artifact or model failure.
 - Attributed Kaggle submission writeup draft: docs/KAGGLE_OFFICIAL_BASELINE_WRITEUP.md.
 - Kaggle **Draft/Submitted state has not been inspected or changed**. The exact starter baseline SHA must be entered in a Kaggle Writeup and explicitly submitted by the account holder.
 - DO NOT represent baseline results as original Aegis performance, or combine its artifacts with the Gemini Aegis harness on `main`. Winning and Stage 2 qualification are NOT guaranteed by passing artifact format checks.

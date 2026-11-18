@@ -38,7 +38,7 @@
 - [x] Exact unchanged published Pi/Claude organizer template imported to `official-template-baseline` (distinct from Aegis main)
 - [x] Offline `kit validate` and `kit artifacts` passed for this template (28 usable + 1 empty, **old dev-set version warning**)
 - [x] Kaggle Writeup drafted with attribution and exact upstream commit; **not yet submitted**
-- [ ] Official Docker packaging check for the template completes successfully
+- [x] Official Docker packaging check for the template **PASSED** on unchanged upstream SHA (Actions run 44251894365)
 - [ ] Baseline Kaggle Writeup saved, correct track selected and **Submit** clicked by an authenticated participant
 - [ ] Kaggle UI or submission receipt confirms status **Submitted**, not Draft
 
