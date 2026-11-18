@@ -31,7 +31,7 @@
 - [ ] Public GitHub repository contains unpacked evaluator-generated 29-task artifacts
 - [ ] Committed GitHub SHA copied from `git rev-parse HEAD`
 - [ ] Kaggle Writeup ≤ 2,000 words, figures attached, repo Project Link included
-- [ ] Kaggle Writeup explicitly SUBMITTED (not left as draft)
+- [x] Aegis PLE Kaggle Writeup visibly **Submitted** in participant screenshot on 18 Nov 2026 (Project Link / commit SHA not shown)
 
 ## Separate organizer-starter baseline path
 
@@ -40,6 +40,8 @@
 - [x] Kaggle Writeup drafted with attribution and exact upstream commit; **not yet submitted**
 - [x] Official Docker packaging check for the template **PASSED** on unchanged upstream SHA (Actions run 44251894365)
 - [ ] Baseline Kaggle Writeup saved, correct track selected and **Submit** clicked by an authenticated participant
-- [ ] Kaggle UI or submission receipt confirms status **Submitted**, not Draft
+- [x] Kaggle UI screenshot confirms an **Aegis PLE** Writeup shows **Submitted**
+- [ ] Confirm the submitted Writeup's **Project Link** and exact 40-character commit SHA; cannot assert that it points to the organizer-starter baseline
+- [ ] Organizer decision on eligibility and advancement to Stage 2
 
 The organizer template's original manifest must not be mixed with the custom Aegis harness. The original Aegis qualification checkboxes above remain unresolved. 

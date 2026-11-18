@@ -65,3 +65,11 @@ To preserve the user's no-billing, no-local-storage constraints, an **independen
 - Kaggle **Draft/Submitted state has not been inspected or changed**. The exact starter baseline SHA must be entered in a Kaggle Writeup and explicitly submitted by the account holder.
 - DO NOT represent baseline results as original Aegis performance, or combine its artifacts with the Gemini Aegis harness on `main`. Winning and Stage 2 qualification are NOT guaranteed by passing artifact format checks.
 
+
+## Kaggle Writeup submission confirmed by participant's screenshot (18 November 2026)
+
+- Screenshot shows **Submitted** with green checkmark for **Aegis PLE — Evidence-First Engineering Agent Harness** in competition → Writeups → Your Work.
+- Participant-supplied Writeup: https://www.kaggle.com/competitions/physical-engineerings-last-exam/writeups/aegis-ple-evidence-first-engineering-agent-harne
+- **Submission is confirmed**, but the screenshot does **not** disclose its attached Project Link or exact commit SHA. The original Aegis main and unchanged organizer starter remain distinct.
+- Neither **stage advancement** nor an independently scored Aegis evaluation follows automatically from Kaggle's Submitted label.
+- The separate organizer-starter baseline has **not** been verified as the commit associated with the submitted Aegis Writeup.
