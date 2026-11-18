@@ -32,3 +32,11 @@ Sources: https://github.com/google-research/ple/blob/main/docs/models.md and htt
 ## Key-only check and data-policy gate
 
 A non-inference model-metadata verifier and a GitHub Actions secret-backed workflow are available. They check only the Gemini model endpoint, never send benchmark files, and never prove project billing tier. See docs/FREE_GEMINI_RUNBOOK.md. Because Google Free Tier may use submitted content to improve products and the PLE gated access terms restrict training uses, genuine dev tasks remain blocked until the organizers authorize that processing route. This does not affect the documented no-billing requirement.
+
+## Remote-only path for a PC with no available storage (18 November 2026)
+
+The participant need not remove any local files, install Docker or download model weights. The project is public and its standard GitHub-hosted runner is free. Measured on a real ephemeral runner in Actions run 44248507186: 4 CPU, 15.61 GiB memory, 87.20 GiB free scratch disk initially, 105.86 GiB after deleting only unused tools in that *temporary runner*. No participant drive was touched; run results do not promise these sizes on later runners.
+
+The 4-CPU machine falls short of the full PLE 6-CPU / 16.25-GiB recommendation, but one small task may fit. An official one-task evaluator workflow is now prepared at .github/workflows/ple-one-task-free-gated.yml, guarded behind **three independent manual affirmations**, including actual written organizer permission for sending restricted dev material to Gemini API Unpaid Services. It is NOT triggered. The user must not affirm a permission they do not possess. Results will never be passed off as a 29-task score; partial genuine artifacts may be accepted but unrun tasks receive zeros.
+
+See docs/FREE_REMOTE_RUNNER_STRATEGY.md, the official artifacts rules, and the safe credential scanner. No paid cloud or local disk usage is required to continue the public CI/resource work.

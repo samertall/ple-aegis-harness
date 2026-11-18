@@ -1,6 +1,6 @@
 # Aegis PLE — current verified qualification status
 
-**Updated:** 17 November 2026  
+**Updated:** 18 November 2026  
 **Public source:** https://github.com/samertall/ple-aegis-harness  
 **Kaggle writeup:** https://www.kaggle.com/competitions/physical-engineerings-last-exam/writeups/aegis-ple-evidence-first-engineering-agent-harne  
 **Kaggle publication/submission state:** Not independently accessible or verified from this tool session.
@@ -8,7 +8,7 @@
 ## Passed (verified)
 
 - Open-source harness, MIT license, supported google-cloud/gemini-3.8-flash model configuration
-- 62 protocol, WebSocket, offline model-fixture, free-tier configuration, diagnostics and integration tests (no paid model calls)
+- 73 protocol, WebSocket, offline model-fixture, free-tier configuration, resource, security and integration tests (no paid model calls)
 - Official PLE kit validate (submission configuration)
 - Official PLE kit build (real competition Docker serve image)
 - Public GitHub repository and Actions CI
@@ -43,3 +43,9 @@ See docs/FREE_ONLY_QUALIFICATION.md and docs/REAL_GEMINI_FREE_SMOKE_RESULTS.md. 
 ## Zero-cost alternative under consideration
 
 Google-approved `google-cloud/gemma-4-26b` uses open weights that can be run privately if the participant already owns sufficiently capable hardware. The project now provides an offline [hardware readiness check](scripts/check_private_gemma_readiness.py) and [private Gemma fallback guidance](docs/PRIVATE_GEMMA_FALLBACK.md). This option was **not** deployed or evaluated. The current selected model remains Gemini 3.8 Flash; never mix artifact exports across models.
+
+## Hosted no-local-storage route measured on 18 Nov 2026
+
+A successful public-repository GitHub standard runner audit recovered 18.66 GiB of temporary runner storage, with 105.86 GiB free disk at the end, 4 CPU cores and 15.61 GiB RAM. **It is below the full PLE resource guideline**, but an individual low-resource dev task might be possible. No participant files were touched. See docs/FREE_REMOTE_RUNNER_STRATEGY.md and GitHub Actions run 44248507186.
+
+A genuine ONE-task GitHub workflow is prepared but **manual and blocked by default** until an explicitly confirmed unbilled Gemini Free Tier project and written organizer authorization for gated task processing are provided. No genuine artifacts have been generated or committed. A credential-shape scanner prevents obvious API-key patterns being uploaded in artifacts; raw logs and grader artifacts still require human security review.
